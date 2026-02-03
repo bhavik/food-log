@@ -1,10 +1,11 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { LogEntry, MealType, MealCategory } from './types';
+import { LogEntry, MealType, MealCategory, FoodItem } from './types';
 import { STORAGE_KEY, MEAL_CATEGORIES as DEFAULT_CATEGORIES } from './constants';
 import Dashboard from './components/Dashboard';
 import History from './components/History';
 import BottomNav from './components/BottomNav';
+import type { CustomItemAction } from './components/CustomItemModal';
 
 const CATEGORIES_STORAGE_KEY = 'foodlog_v1_categories';
 
@@ -47,6 +48,26 @@ const App: React.FC = () => {
     setTimeout(() => setToast(null), 2500);
   }, []);
 
+  const addItemToCategory = useCallback((mealType: MealType, item: FoodItem) => {
+    setCategories(prev => prev.map(cat =>
+      cat.type === mealType ? { ...cat, items: [...cat.items, item] } : cat
+    ));
+  }, []);
+
+  const handleCustomItem = useCallback((name: string, emoji: string, action: CustomItemAction) => {
+    if (action.savePermanently && action.mealType) {
+      const newItem: FoodItem = {
+        id: `custom_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        name,
+        emoji
+      };
+      addItemToCategory(action.mealType, newItem);
+      addLog(name, action.mealType, emoji, true);
+    } else {
+      addLog(name, 'other', emoji, true);
+    }
+  }, [addItemToCategory, addLog]);
+
   const updateItemTitle = useCallback((itemId: string, newTitle: string) => {
     setCategories(prev => prev.map(cat => ({
       ...cat,
@@ -71,33 +92,24 @@ const App: React.FC = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#020617] pb-40 text-slate-200 antialiased">
-      {/* High-End Sticky Header */}
-      <header className="px-6 pt-14 pb-8 sticky top-0 z-40 bg-[#020617]/80 backdrop-blur-xl border-b border-white/5">
-        <div className="flex justify-between items-end">
-          <div className="space-y-1">
-            <p className="text-[10px] font-extrabold tracking-[0.4em] text-amber-500 uppercase opacity-90">
-              {dateStr}
-            </p>
-            <h1 className="text-3xl font-black tracking-tighter text-white">
-              Food<span className="text-slate-500 font-light italic">Log</span>
-            </h1>
-          </div>
-          <div className="flex flex-col items-end">
-            <div className="px-3 py-1 bg-white/5 rounded-full border border-white/10">
-              <span className="text-[9px] font-bold text-slate-400 tracking-widest uppercase">System Ready</span>
-            </div>
-          </div>
+    <div className="min-h-screen pb-32 antialiased">
+      <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-[var(--bg-primary)]/90 backdrop-blur-xl">
+        <div className="max-w-xl mx-auto px-5 pt-6 pb-5">
+          <p className="text-sm text-stone-500 mb-0.5">{dateStr}</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-white">
+            FoodLog
+          </h1>
         </div>
       </header>
 
-      <main className="max-w-xl mx-auto px-6 mt-10">
+      <main className="max-w-xl mx-auto px-5 pt-6">
         {activeTab === 'track' ? (
           <Dashboard 
             onLog={addLog} 
             logs={logs} 
             categories={categories} 
             onUpdateTitle={updateItemTitle}
+            onAddCustomItem={handleCustomItem}
           />
         ) : (
           <History 
@@ -108,12 +120,11 @@ const App: React.FC = () => {
         )}
       </main>
 
-      {/* Premium Toast Notification */}
       {toast && (
-        <div className="fixed bottom-36 left-0 right-0 flex justify-center z-50 px-6 animate-lux">
-          <div className="bg-white text-black px-8 py-4 rounded-2xl shadow-2xl flex items-center gap-4 border border-white/20">
-            <div className="h-2 w-2 bg-amber-500 rounded-full animate-pulse"></div>
-            <span className="text-xs font-black tracking-widest uppercase whitespace-nowrap">Logged: {toast.msg}</span>
+        <div className="fixed bottom-28 left-0 right-0 flex justify-center z-50 px-5 animate-fade-up">
+          <div className="bg-stone-800 text-white px-5 py-3 rounded-xl shadow-lg flex items-center gap-3 border border-white/[0.08]">
+            <div className="h-2 w-2 bg-emerald-400 rounded-full animate-pulse" />
+            <span className="text-sm font-medium whitespace-nowrap">Added {toast.msg}</span>
           </div>
         </div>
       )}

@@ -2,16 +2,17 @@
 import React, { useState, useMemo } from 'react';
 import { MealType, LogEntry, MealCategory } from '../types';
 import CustomItemModal from './CustomItemModal';
-import { ChevronRightIcon, PlusIcon, CheckIcon, Edit3Icon, XIcon, ActivityIcon } from 'lucide-react';
+import { ChevronRightIcon, PlusIcon, Edit3Icon, XIcon } from 'lucide-react';
 
 interface DashboardProps {
   onLog: (name: string, type: MealType, emoji: string, isCustom?: boolean) => void;
   logs: LogEntry[];
   categories: MealCategory[];
   onUpdateTitle: (itemId: string, newTitle: string) => void;
+  onAddCustomItem: (name: string, emoji: string, action: import('./CustomItemModal').CustomItemAction) => void;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ onLog, logs, categories, onUpdateTitle }) => {
+const Dashboard: React.FC<DashboardProps> = ({ onLog, logs, categories, onUpdateTitle, onAddCustomItem }) => {
   const [selectedType, setSelectedType] = useState<MealType>(() => {
     const hour = new Date().getHours();
     if (hour < 10) return 'breakfast';
@@ -27,8 +28,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onLog, logs, categories, onUpdate
     return logs.filter(log => log.timestamp >= startOfDay);
   }, [logs]);
 
-  const isItemLoggedToday = (name: string) => {
-    return todayLogs.some(log => log.itemName === name);
+  const getTodayCountForItem = (name: string) => {
+    return todayLogs.filter(log => log.itemName === name).length;
   };
 
   const activeCategory = categories.find(c => c.type === selectedType) || categories[0];
@@ -42,17 +43,17 @@ const Dashboard: React.FC<DashboardProps> = ({ onLog, logs, categories, onUpdate
   };
 
   return (
-    <div className="space-y-12 animate-lux">
-      {/* Luxury Category Selector */}
-      <div className="flex bg-white/5 p-1.5 rounded-2xl border border-white/5 overflow-x-auto no-scrollbar gap-1">
+    <div className="space-y-8 animate-fade-up">
+      {/* Meal tabs */}
+      <div className="flex bg-stone-800/60 p-1 rounded-xl overflow-x-auto no-scrollbar gap-1">
         {categories.map((cat) => (
           <button
             key={cat.type}
             onClick={() => setSelectedType(cat.type)}
-            className={`whitespace-nowrap flex-1 py-3 px-6 rounded-xl text-[10px] font-black tracking-[0.2em] transition-lux uppercase ${
-              selectedType === cat.type 
-                ? 'bg-amber-500 text-[#020617] shadow-lg shadow-amber-500/20' 
-                : 'text-slate-500 hover:text-slate-300'
+            className={`whitespace-nowrap flex-1 min-w-0 py-2.5 px-4 rounded-lg text-sm font-medium transition-smooth ${
+              selectedType === cat.type
+                ? 'bg-stone-700 text-white shadow-sm'
+                : 'text-stone-500 hover:text-stone-300'
             }`}
           >
             {cat.label}
@@ -60,68 +61,58 @@ const Dashboard: React.FC<DashboardProps> = ({ onLog, logs, categories, onUpdate
         ))}
       </div>
 
-      {/* Main List Interface */}
-      <div className="space-y-6">
-        <div className="flex items-center justify-between px-2">
-           <div className="flex items-center gap-3">
-              <ActivityIcon size={14} className="text-amber-500" />
-              <h2 className="text-[11px] font-black tracking-[0.3em] text-slate-400 uppercase">Available Protocols</h2>
-           </div>
-           <span className="text-[10px] font-bold text-slate-600 bg-white/5 px-3 py-1 rounded-full border border-white/5 uppercase tracking-tighter">
-            {todayLogs.filter(l => l.mealType === selectedType).length} Recorded
-           </span>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-medium text-stone-500">
+            Tap to log
+          </h2>
+          <span className="text-xs text-stone-600 bg-stone-800/50 px-2.5 py-1 rounded-full">
+            {todayLogs.filter(l => l.mealType === selectedType).length} today
+          </span>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-2">
           {activeCategory.items.map((item) => {
-            const logged = isItemLoggedToday(item.name);
+            const count = getTodayCountForItem(item.name);
             return (
               <div
                 key={item.id}
-                className={`relative overflow-hidden flex items-center justify-between p-6 rounded-3xl transition-lux group border ${
-                  logged 
-                    ? 'bg-slate-900/40 border-slate-800/50' 
-                    : 'bg-white/[0.03] border-white/[0.05] hover:border-amber-500/30 hover:bg-white/[0.05]'
+                className={`flex items-center justify-between rounded-2xl border transition-smooth group ${
+                  count > 0
+                    ? 'bg-stone-800/50 border-white/[0.06]'
+                    : 'bg-stone-800/30 border-transparent hover:bg-stone-800/50 hover:border-white/[0.06]'
                 }`}
               >
                 <button
-                  disabled={logged}
                   onClick={() => onLog(item.name, selectedType, item.emoji)}
-                  className="flex-1 flex items-center gap-6 text-left relative z-10"
+                  className="flex-1 flex items-center gap-4 py-4 pl-4 pr-2 text-left"
                 >
-                  <div className={`h-1.5 w-1.5 rounded-full shadow-lg transition-lux ${
-                    logged ? 'bg-amber-500 shadow-amber-500/50 scale-125' : 'bg-slate-700 group-hover:bg-slate-400'
-                  }`}></div>
-                  <div className="flex flex-col">
-                    <span className={`text-[15px] font-bold tracking-tight transition-lux ${
-                      logged ? 'text-slate-500 opacity-60' : 'text-slate-200 group-hover:text-white'
-                    }`}>
+                  <span className="text-2xl leading-none">{item.emoji}</span>
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-[15px] font-medium text-stone-100 truncate">
                       {item.name}
                     </span>
-                    {logged && (
-                      <span className="text-[9px] font-black text-amber-500 uppercase tracking-widest mt-1">Confirmed Log</span>
+                    {count > 0 && (
+                      <span className="text-xs text-emerald-400/90 mt-0.5">
+                        {count}× today
+                      </span>
                     )}
                   </div>
                 </button>
-                
-                <div className="flex items-center gap-6 relative z-10">
-                  {!logged && (
-                    <button 
-                      onClick={() => setEditingItem({ id: item.id, name: item.name })}
-                      className="text-slate-600 hover:text-amber-500 transition-lux p-2 rounded-xl hover:bg-white/5"
-                    >
-                      <Edit3Icon size={16} strokeWidth={2.5} />
-                    </button>
+                <div className="flex items-center gap-1 pr-3">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setEditingItem({ id: item.id, name: item.name }); }}
+                    className="p-2 rounded-lg text-stone-500 hover:text-stone-300 hover:bg-white/5 transition-smooth"
+                    aria-label="Edit"
+                  >
+                    <Edit3Icon size={16} strokeWidth={2} />
+                  </button>
+                  {count > 0 && (
+                    <span className="text-xs font-semibold text-emerald-400/90 bg-emerald-500/10 px-2.5 py-1 rounded-lg">
+                      {count}×
+                    </span>
                   )}
-                  {logged ? (
-                    <div className="bg-amber-500/10 p-2 rounded-xl border border-amber-500/20">
-                      <CheckIcon size={16} strokeWidth={3} className="text-amber-500" />
-                    </div>
-                  ) : (
-                    <div className="p-2 text-slate-700 transition-lux group-hover:text-slate-200">
-                      <ChevronRightIcon size={20} strokeWidth={1.5} />
-                    </div>
-                  )}
+                  <ChevronRightIcon size={18} className="text-stone-600 group-hover:text-stone-400 transition-smooth" strokeWidth={2} aria-hidden />
                 </div>
               </div>
             );
@@ -129,50 +120,45 @@ const Dashboard: React.FC<DashboardProps> = ({ onLog, logs, categories, onUpdate
         </div>
       </div>
 
-      {/* Custom Addition Trigger */}
-      <div className="pt-4">
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="w-full flex items-center justify-between p-8 rounded-3xl border border-dashed border-white/10 hover:border-amber-500/40 hover:bg-amber-500/[0.02] transition-lux group"
-          >
-            <div className="flex items-center gap-6">
-               <div className="h-12 w-12 bg-white/5 rounded-2xl flex items-center justify-center text-slate-500 group-hover:bg-amber-500 group-hover:text-[#020617] transition-lux shadow-2xl">
-                  <PlusIcon size={20} strokeWidth={3} />
-               </div>
-               <div className="text-left">
-                  <p className="text-xs font-black text-slate-300 uppercase tracking-[0.2em]">Manual Entry</p>
-                  <p className="text-[10px] font-bold text-slate-600 mt-1 uppercase tracking-tighter italic">Override Standard Protocol</p>
-               </div>
-            </div>
-          </button>
-      </div>
+      <button
+        onClick={() => setIsModalOpen(true)}
+        className="w-full flex items-center gap-4 p-4 rounded-2xl border border-dashed border-stone-600 hover:border-stone-500 hover:bg-stone-800/30 transition-smooth text-stone-400 hover:text-stone-300"
+      >
+        <div className="h-10 w-10 rounded-xl bg-stone-800 flex items-center justify-center">
+          <PlusIcon size={20} strokeWidth={2} />
+        </div>
+        <div className="text-left">
+          <p className="text-sm font-medium">Add custom item</p>
+          <p className="text-xs text-stone-500">Not in the list?</p>
+        </div>
+      </button>
 
-      {/* Minimalist Edit Overlay */}
       {editingItem && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center px-6">
-          <div className="absolute inset-0 bg-[#020617]/95 backdrop-blur-md" onClick={() => setEditingItem(null)}></div>
-          <form 
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-5">
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setEditingItem(null)} />
+          <form
             onSubmit={handleUpdateTitle}
-            className="relative w-full max-w-sm bg-[#0f172a] rounded-[2rem] p-10 border border-white/10 shadow-2xl animate-lux"
+            className="relative w-full max-w-sm bg-stone-800 rounded-2xl p-6 border border-white/[0.06] shadow-xl animate-fade-up"
           >
-            <div className="flex justify-between items-center mb-10">
-              <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-amber-500">Edit Title</h3>
-              <button type="button" onClick={() => setEditingItem(null)} className="text-slate-500 hover:text-white p-2">
-                <XIcon size={20} />
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-sm font-medium text-stone-400">Edit item</h3>
+              <button type="button" onClick={() => setEditingItem(null)} className="p-2 rounded-lg text-stone-500 hover:text-white hover:bg-white/5">
+                <XIcon size={18} />
               </button>
             </div>
-            <input 
+            <input
               autoFocus
               type="text"
               value={editingItem.name}
-              onChange={(e) => setEditingItem({...editingItem, name: e.target.value})}
-              className="w-full bg-transparent text-2xl font-black py-4 border-b-2 border-white/5 focus:outline-none focus:border-amber-500 transition-lux mb-12 text-white placeholder:text-slate-800"
+              onChange={(e) => setEditingItem({ ...editingItem, name: e.target.value })}
+              className="w-full bg-stone-900/50 border border-white/[0.06] rounded-xl px-4 py-3 text-base font-medium text-white placeholder:text-stone-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500/50 mb-4"
+              placeholder="Item name"
             />
-            <button 
+            <button
               type="submit"
-              className="w-full py-5 bg-amber-500 text-[#020617] rounded-2xl text-[11px] font-black uppercase tracking-[0.3em] shadow-xl hover:bg-amber-400 transition-lux active:scale-95"
+              className="w-full py-3 bg-emerald-500 hover:bg-emerald-400 text-stone-900 font-medium rounded-xl transition-smooth active:scale-[0.98]"
             >
-              Confirm Changes
+              Save
             </button>
           </form>
         </div>
@@ -181,10 +167,11 @@ const Dashboard: React.FC<DashboardProps> = ({ onLog, logs, categories, onUpdate
       {isModalOpen && (
         <CustomItemModal 
           onClose={() => setIsModalOpen(false)} 
-          onAdd={(name, emoji) => {
-            onLog(name, 'other', emoji, true);
+          onAdd={(name, emoji, action) => {
+            onAddCustomItem(name, emoji, action);
             setIsModalOpen(false);
-          }} 
+          }}
+          categoryLabels={categories.map(c => ({ type: c.type, label: c.label }))}
         />
       )}
     </div>
