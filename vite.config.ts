@@ -4,7 +4,8 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
-  base: './',
+  // Required for GitHub Pages: repo name as base path
+  base: process.env.NODE_ENV === 'production' ? '/food-log/' : './',
   build: {
     outDir: 'dist',
     rollupOptions: {
