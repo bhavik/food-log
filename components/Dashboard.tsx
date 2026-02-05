@@ -84,7 +84,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLog, logs, categories, onUpdate
           <button
             key={cat.type}
             onClick={() => setSelectedType(cat.type)}
-            className={`whitespace-nowrap flex-1 min-w-0 py-3 px-4 rounded-lg text-base font-medium transition-smooth ${
+            className={`whitespace-nowrap flex-1 min-w-[5.5rem] py-3 pl-4 pr-5 rounded-lg text-base font-medium transition-smooth text-center ${
               selectedType === cat.type
                 ? 'meal-tab-active'
                 : 'text-stone-500 hover:text-stone-300'
