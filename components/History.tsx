@@ -159,8 +159,8 @@ const History: React.FC<HistoryProps> = ({ logs, onDelete, onImport }) => {
           <div className="h-14 w-14 bg-stone-800 rounded-2xl flex items-center justify-center mb-6 text-stone-600">
             <CalendarIcon size={28} strokeWidth={1.5} />
           </div>
-          <h3 className="text-sm font-medium text-stone-500">No entries yet</h3>
-          <p className="text-xs text-stone-600 mt-1">Log something from the Log tab</p>
+          <h3 className="text-base font-medium text-stone-500">No entries yet</h3>
+          <p className="text-sm text-stone-600 mt-1">Log something from the Log tab</p>
         </div>
       );
     }
@@ -168,7 +168,7 @@ const History: React.FC<HistoryProps> = ({ logs, onDelete, onImport }) => {
       <div className="space-y-6">
         {Object.entries(groupedByDateDay).map(([date, entries]) => (
           <div key={date}>
-            <h3 className="text-sm font-medium text-stone-500 mb-4">
+            <h3 className="text-base font-medium text-stone-500 mb-4">
               {new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
             </h3>
             <div className="space-y-2">
@@ -180,10 +180,10 @@ const History: React.FC<HistoryProps> = ({ logs, onDelete, onImport }) => {
                   <div className="flex items-center gap-4 min-w-0">
                     <span className="text-xl shrink-0">{log.emoji}</span>
                     <div className="min-w-0">
-                      <p className="font-medium text-stone-100 text-[15px] truncate">{log.itemName}</p>
-                      <p className="text-xs text-stone-500 mt-0.5 capitalize">{log.mealType}</p>
-                    </div>
-                    <span className="text-xs text-stone-600 tabular-nums shrink-0 ml-auto mr-2">
+                      <p className="font-medium text-stone-100 text-base truncate">{log.itemName}</p>
+                      <p className="text-sm text-stone-500 mt-0.5 capitalize">{log.mealType}</p>
+                      </div>
+                    <span className="text-sm text-stone-600 tabular-nums shrink-0 ml-auto mr-2">
                       {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
                     </span>
                   </div>
@@ -211,7 +211,7 @@ const History: React.FC<HistoryProps> = ({ logs, onDelete, onImport }) => {
           <div className="h-14 w-14 bg-stone-800 rounded-2xl flex items-center justify-center mb-6 text-stone-600">
             <CalendarIcon size={28} strokeWidth={1.5} />
           </div>
-          <h3 className="text-sm font-medium text-stone-500">No entries this week</h3>
+          <h3 className="text-base font-medium text-stone-500">No entries this week</h3>
         </div>
       );
     }
@@ -226,14 +226,14 @@ const History: React.FC<HistoryProps> = ({ logs, onDelete, onImport }) => {
                 className="w-[160px] shrink-0 rounded-xl bg-stone-800/50 border border-white/[0.06] overflow-hidden"
               >
                 <div className="px-3 py-2 border-b border-white/[0.06] bg-stone-800/80">
-                  <p className="text-xs font-medium text-stone-400">{formatDayHeader(dayStart)}</p>
-                  <p className="text-[10px] text-stone-600 mt-0.5">
+                  <p className="text-sm font-medium text-stone-400">{formatDayHeader(dayStart)}</p>
+                  <p className="text-xs text-stone-600 mt-0.5">
                     {new Date(dayStart).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                   </p>
                 </div>
                 <div className="p-2 space-y-1.5 max-h-[280px] overflow-y-auto">
                   {dayLogs.length === 0 ? (
-                    <p className="text-xs text-stone-600 py-2 text-center">—</p>
+                    <p className="text-sm text-stone-600 py-2 text-center">—</p>
                   ) : (
                     dayLogs.map(log => (
                       <div
@@ -242,8 +242,8 @@ const History: React.FC<HistoryProps> = ({ logs, onDelete, onImport }) => {
                       >
                         <span className="text-base shrink-0">{log.emoji}</span>
                         <div className="min-w-0 flex-1">
-                          <p className="text-xs font-medium text-stone-200 truncate">{log.itemName}</p>
-                          <p className="text-[10px] text-stone-500">
+                          <p className="text-sm font-medium text-stone-200 truncate">{log.itemName}</p>
+                          <p className="text-xs text-stone-500">
                             {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
                           </p>
                         </div>
@@ -279,7 +279,7 @@ const History: React.FC<HistoryProps> = ({ logs, onDelete, onImport }) => {
           >
             <ChevronLeftIcon size={20} />
           </button>
-          <h3 className="text-sm font-medium text-stone-300">{monthName}</h3>
+          <h3 className="text-base font-medium text-stone-300">{monthName}</h3>
           <button
             onClick={() => setMonthOffset(m => m + 1)}
             className="p-2 rounded-lg text-stone-500 hover:text-white hover:bg-white/5 transition-smooth"
@@ -290,7 +290,7 @@ const History: React.FC<HistoryProps> = ({ logs, onDelete, onImport }) => {
         </div>
         <div className="grid grid-cols-7 gap-0.5">
           {weekDaysHeader.map(day => (
-            <div key={day} className="py-1.5 text-center text-[10px] font-medium text-stone-500 uppercase">
+            <div key={day} className="py-1.5 text-center text-xs font-medium text-stone-500 uppercase">
               {day}
             </div>
           ))}
@@ -305,7 +305,7 @@ const History: React.FC<HistoryProps> = ({ logs, onDelete, onImport }) => {
                 key={cell.key!}
                 type="button"
                 onClick={() => setSelectedDateKey(isSelected ? null : cell.key)}
-                className={`aspect-square rounded-lg flex flex-col items-center justify-center text-sm transition-smooth ${
+                className={`aspect-square rounded-lg flex flex-col items-center justify-center text-base transition-smooth ${
                   isSelected
                     ? 'bg-emerald-500/30 text-emerald-300 ring-1 ring-emerald-500/50'
                     : hasLogs
@@ -315,7 +315,7 @@ const History: React.FC<HistoryProps> = ({ logs, onDelete, onImport }) => {
               >
                 <span className="tabular-nums">{new Date(cell.date!).getDate()}</span>
                 {hasLogs && (
-                  <span className="text-[9px] text-stone-500 mt-0.5">{cell.count}</span>
+                  <span className="text-xs text-stone-500 mt-0.5">{cell.count}</span>
                 )}
               </button>
             );
@@ -323,7 +323,7 @@ const History: React.FC<HistoryProps> = ({ logs, onDelete, onImport }) => {
         </div>
         {selectedDateKey && selectedDayLogs.length > 0 && (
           <div className="pt-4 border-t border-white/[0.06]">
-            <h4 className="text-sm font-medium text-stone-500 mb-3">
+            <h4 className="text-base font-medium text-stone-500 mb-3">
               {new Date(selectedDateKey).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
             </h4>
             <div className="space-y-2">
@@ -335,10 +335,10 @@ const History: React.FC<HistoryProps> = ({ logs, onDelete, onImport }) => {
                   <div className="flex items-center gap-3 min-w-0">
                     <span className="text-lg shrink-0">{log.emoji}</span>
                     <div className="min-w-0">
-                      <p className="font-medium text-stone-100 text-sm truncate">{log.itemName}</p>
-                      <p className="text-xs text-stone-500 capitalize">{log.mealType}</p>
+                      <p className="font-medium text-stone-100 text-base truncate">{log.itemName}</p>
+                      <p className="text-sm text-stone-500 capitalize">{log.mealType}</p>
                     </div>
-                    <span className="text-xs text-stone-600 tabular-nums shrink-0 ml-auto mr-2">
+                    <span className="text-sm text-stone-600 tabular-nums shrink-0 ml-auto mr-2">
                       {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
                     </span>
                   </div>
@@ -347,7 +347,7 @@ const History: React.FC<HistoryProps> = ({ logs, onDelete, onImport }) => {
                     className="p-2 rounded-lg text-stone-500 hover:text-red-400 hover:bg-red-500/10 transition-smooth"
                     aria-label="Delete"
                   >
-                    <Trash2Icon size={14} strokeWidth={2} />
+                    <Trash2Icon size={16} strokeWidth={2} />
                   </button>
                 </div>
               ))}
@@ -356,7 +356,7 @@ const History: React.FC<HistoryProps> = ({ logs, onDelete, onImport }) => {
         )}
         {selectedDateKey && selectedDayLogs.length === 0 && (
           <div className="pt-4 border-t border-white/[0.06]">
-            <p className="text-sm text-stone-500">
+            <p className="text-base text-stone-500">
               No entries on {new Date(selectedDateKey).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}.
             </p>
           </div>
@@ -372,7 +372,7 @@ const History: React.FC<HistoryProps> = ({ logs, onDelete, onImport }) => {
           <button
             key={f}
             onClick={() => setFilter(f)}
-            className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-smooth capitalize ${
+            className={`flex-1 py-3 text-base font-medium rounded-lg transition-smooth capitalize ${
               filter === f ? 'bg-stone-700 text-white' : 'text-stone-500 hover:text-stone-300'
             }`}
           >
@@ -386,20 +386,20 @@ const History: React.FC<HistoryProps> = ({ logs, onDelete, onImport }) => {
       {filter === 'month' && renderMonthView()}
 
       <div className="pt-8 border-t border-white/[0.06]">
-        <h2 className="text-sm font-medium text-stone-500 mb-4">Data</h2>
+        <h2 className="text-base font-medium text-stone-500 mb-4">Data</h2>
         <div className="grid grid-cols-2 gap-3">
           <button
             onClick={handleExport}
-            className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-stone-800/50 border border-white/[0.06] text-stone-400 hover:text-white hover:bg-stone-800 transition-smooth text-sm font-medium"
+            className="flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl bg-stone-800/50 border border-white/[0.06] text-stone-400 hover:text-white hover:bg-stone-800 transition-smooth text-base font-medium"
           >
-            <DownloadIcon size={18} />
+            <DownloadIcon size={20} />
             Backup
           </button>
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-stone-800/50 border border-white/[0.06] text-stone-400 hover:text-white hover:bg-stone-800 transition-smooth text-sm font-medium"
+            className="flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl bg-stone-800/50 border border-white/[0.06] text-stone-400 hover:text-white hover:bg-stone-800 transition-smooth text-base font-medium"
           >
-            <UploadIcon size={18} />
+            <UploadIcon size={20} />
             Restore
           </button>
           <input type="file" ref={fileInputRef} onChange={handleImport} accept=".json" className="hidden" />

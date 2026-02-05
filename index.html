@@ -27,6 +27,7 @@
         }
         body {
             font-family: 'DM Sans', system-ui, sans-serif;
+            font-size: 17px;
             -webkit-tap-highlight-color: transparent;
             background: var(--bg-primary);
             color: #fafaf9;
@@ -42,7 +43,20 @@
             to { opacity: 1; transform: translateY(0); }
         }
         .animate-fade-up { animation: fadeUp 0.4s ease-out forwards; }
+        @keyframes slideInLeft {
+            from { transform: translateX(-100%); }
+            to { transform: translateX(0); }
+        }
+        .animate-slide-in-left { animation: slideInLeft 0.25s ease-out forwards; }
         .safe-area-pb { padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
+        /* Title: Food (white) + Log (yellow italic) */
+        .title-foodlog { font-family: inherit; }
+        .title-food { color: #fafaf9; }
+        .title-log { color: #fbbf24; font-style: italic; font-weight: 400; }
+        /* Active meal tab - yellow background */
+        .meal-tab-active { background-color: #f59e0b !important; color: #1c1917 !important; box-shadow: 0 10px 15px -3px rgba(245, 158, 11, 0.2); }
+        /* Bottom nav active tab - yellow */
+        .nav-tab-active { color: #fbbf24 !important; }
     </style>
 <script type="importmap">
 {

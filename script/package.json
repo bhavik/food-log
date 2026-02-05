@@ -1,0 +1,11 @@
+{
+  "name": "foodlog-scripts",
+  "private": true,
+  "description": "One-off scripts for FoodLog (e.g. set Firebase custom claims)",
+  "scripts": {
+    "set-role": "node set-role-claim.js"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.0.0"
+  }
+}

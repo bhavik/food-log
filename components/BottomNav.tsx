@@ -14,20 +14,20 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab }) => {
         <button
           onClick={() => setActiveTab('track')}
           className={`flex flex-col items-center gap-1.5 transition-smooth ${
-            activeTab === 'track' ? 'text-emerald-400' : 'text-stone-500 hover:text-stone-400'
+            activeTab === 'track' ? 'nav-tab-active' : 'text-stone-500 hover:text-stone-400'
           }`}
         >
           <PlusCircleIcon size={24} strokeWidth={activeTab === 'track' ? 2.5 : 2} />
-          <span className="text-xs font-medium">Log</span>
+          <span className="text-xs font-medium uppercase tracking-wider">Track</span>
         </button>
         <button
           onClick={() => setActiveTab('history')}
           className={`flex flex-col items-center gap-1.5 transition-smooth ${
-            activeTab === 'history' ? 'text-emerald-400' : 'text-stone-500 hover:text-stone-400'
+            activeTab === 'history' ? 'nav-tab-active' : 'text-stone-500 hover:text-stone-400'
           }`}
         >
           <ClockIcon size={24} strokeWidth={activeTab === 'history' ? 2.5 : 2} />
-          <span className="text-xs font-medium">History</span>
+          <span className="text-xs font-medium uppercase tracking-wider">History</span>
         </button>
         </div>
       </div>

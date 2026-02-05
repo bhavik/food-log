@@ -34,7 +34,7 @@ const CustomItemModal: React.FC<CustomItemModalProps> = ({ onClose, onAdd, categ
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} aria-hidden />
       <div className="relative w-full max-w-lg bg-stone-800 rounded-t-2xl p-6 shadow-xl border border-t border-white/[0.06] animate-fade-up max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-base font-semibold text-stone-100">Add custom item</h2>
+          <h2 className="text-lg font-semibold text-stone-100">Add custom item</h2>
           <button
             onClick={onClose}
             className="p-2 rounded-lg text-stone-500 hover:text-white hover:bg-white/5 transition-smooth"
@@ -45,7 +45,7 @@ const CustomItemModal: React.FC<CustomItemModalProps> = ({ onClose, onAdd, categ
         </div>
         <form onSubmit={handleSubmit} className="space-y-6 pb-6">
           <div>
-            <label className="block text-sm font-medium text-stone-500 mb-2">Name</label>
+            <label className="block text-base font-medium text-stone-500 mb-2">Name</label>
             <input
               autoFocus
               type="text"
@@ -57,7 +57,7 @@ const CustomItemModal: React.FC<CustomItemModalProps> = ({ onClose, onAdd, categ
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-stone-500 mb-2">Emoji</label>
+            <label className="block text-base font-medium text-stone-500 mb-2">Emoji</label>
             <div className="grid grid-cols-6 gap-2">
               {SYMBOLS.map((emoji) => (
                 <button
@@ -77,7 +77,7 @@ const CustomItemModal: React.FC<CustomItemModalProps> = ({ onClose, onAdd, categ
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-stone-500 mb-3">Save to list?</label>
+            <label className="block text-base font-medium text-stone-500 mb-3">Save to list?</label>
             <div className="flex gap-3">
               <button
                 type="button"
@@ -88,7 +88,7 @@ const CustomItemModal: React.FC<CustomItemModalProps> = ({ onClose, onAdd, categ
                     : 'bg-stone-800/50 border-white/[0.06] text-stone-400 hover:text-stone-300'
                 }`}
               >
-                <span className="text-sm font-medium">Just this time</span>
+                <span className="text-base font-medium">Just this time</span>
               </button>
               <button
                 type="button"
@@ -100,21 +100,21 @@ const CustomItemModal: React.FC<CustomItemModalProps> = ({ onClose, onAdd, categ
                 }`}
               >
                 <BookmarkIcon size={16} />
-                <span className="text-sm font-medium">Add to my list</span>
+                <span className="text-base font-medium">Add to my list</span>
               </button>
             </div>
           </div>
 
           {savePermanently && (
             <div>
-              <label className="block text-sm font-medium text-stone-500 mb-2">Which list?</label>
+              <label className="block text-base font-medium text-stone-500 mb-2">Which list?</label>
               <div className="grid grid-cols-2 gap-2">
                 {categoryLabels.map((cat) => (
                   <button
                     key={cat.type}
                     type="button"
                     onClick={() => setSelectedCategory(cat.type)}
-                    className={`py-2.5 px-3 rounded-xl text-sm font-medium transition-smooth ${
+                    className={`py-2.5 px-3 rounded-xl text-base font-medium transition-smooth ${
                       selectedCategory === cat.type
                         ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
                         : 'bg-stone-800 border border-white/[0.06] text-stone-400 hover:text-stone-300'

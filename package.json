@@ -1,4 +1,3 @@
-
 {
   "name": "food-log",
   "private": true,
@@ -10,6 +9,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.94.0",
+    "firebase": "^12.8.0",
+    "firebase-admin": "^13.6.1",
     "lucide-react": "^0.463.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
