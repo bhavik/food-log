@@ -14,7 +14,7 @@ export const MEAL_CATEGORIES: MealCategory[] = [
         calories: 121.2,
         fat: 5.2,
         protein: 4.1,
-        sugar: 3.2,
+        sugar: 1.0,
         emoji: '☕'
       },
       {

@@ -1,6 +1,9 @@
 import React, { useMemo, useState } from 'react';
 import type { LogEntry, MealCategory, FoodItem } from '../types';
-import { LeafIcon } from 'lucide-react';
+import { LeafIcon, TrendingUp } from 'lucide-react';
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+const LAST_N_DAYS = 7;
 
 interface NutritionProps {
   logs: LogEntry[];
@@ -16,6 +19,11 @@ function formatDateLabel(dateStr: string): string {
   return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
+function formatChartDayLabel(dateStr: string): string {
+  const d = new Date(`${dateStr}T00:00:00`);
+  return d.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' });
+}
+
 type NutritionTotals = {
   calories: number;
   protein: number;
@@ -27,6 +35,50 @@ const EMPTY_TOTALS: NutritionTotals = { calories: 0, protein: 0, fat: 0, sugar: 
 
 function buildItemKey(item: Pick<FoodItem, 'name' | 'emoji'>): string {
   return `${item.name}__${item.emoji}`;
+}
+
+type TrendDay = { dateKey: string; label: string; calories: number; protein: number; fat: number; sugar: number };
+
+function TrendChart({
+  title,
+  data,
+  valueKey,
+  formatValue,
+  barColor,
+}: {
+  title: string;
+  data: TrendDay[];
+  valueKey: keyof Pick<TrendDay, 'calories' | 'protein' | 'fat' | 'sugar'>;
+  formatValue: (v: number) => string;
+  barColor: string;
+}) {
+  const values = data.map((d) => d[valueKey]);
+  const max = Math.max(1, ...values);
+  return (
+    <div className="space-y-2">
+      <p className="text-xs font-medium text-stone-500">{title}</p>
+      <div className="flex items-end gap-1">
+        {data.map((day) => {
+          const v = day[valueKey];
+          const pct = max > 0 ? (v / max) * 100 : 0;
+          return (
+            <div key={day.dateKey} className="flex-1 flex flex-col items-center gap-1 min-w-0">
+              <div className="h-12 w-full flex flex-col justify-end" style={{ minHeight: 48 }}>
+                <div
+                  className={`w-full rounded-t transition-all ${barColor}`}
+                  style={{ height: `${Math.max(pct, 2)}%`, minHeight: v > 0 ? 4 : 2 }}
+                  title={`${day.label}: ${formatValue(v)}`}
+                />
+              </div>
+              <span className="text-[10px] text-stone-500 truncate w-full text-center">
+                {day.label.split(' ')[0]}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
 
 const Nutrition: React.FC<NutritionProps> = ({ logs, categories }) => {
@@ -67,6 +119,39 @@ const Nutrition: React.FC<NutritionProps> = ({ logs, categories }) => {
     return { totals: totalsAcc, missingCount: missing, resolvedLogs: resolved };
   }, [dayLogs, itemLookup]);
 
+  const trendDays = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayStart = today.getTime();
+    const days: { dateKey: string; label: string; calories: number; protein: number; fat: number; sugar: number }[] = [];
+    for (let i = LAST_N_DAYS - 1; i >= 0; i--) {
+      const dayStart = todayStart - i * DAY_MS;
+      const dk = dateKey(dayStart);
+      const dayLogsForDate = logs.filter((log) => dateKey(log.timestamp) === dk);
+      const acc = { ...EMPTY_TOTALS };
+      dayLogsForDate.forEach((log) => {
+        const item = itemLookup.get(buildItemKey({ name: log.itemName, emoji: log.emoji }));
+        const cal = log.calories ?? item?.calories;
+        const pro = log.protein ?? item?.protein;
+        const f = log.fat ?? item?.fat;
+        const sug = log.sugar ?? item?.sugar;
+        if (cal != null) acc.calories += cal;
+        if (pro != null) acc.protein += pro;
+        if (f != null) acc.fat += f;
+        if (sug != null) acc.sugar += sug;
+      });
+      days.push({
+        dateKey: dk,
+        label: formatChartDayLabel(dk),
+        calories: acc.calories,
+        protein: acc.protein,
+        fat: acc.fat,
+        sugar: acc.sugar,
+      });
+    }
+    return days;
+  }, [logs, itemLookup]);
+
   return (
     <section className="space-y-6 pb-8">
       <div className="flex items-center justify-between gap-4">
@@ -98,6 +183,44 @@ const Nutrition: React.FC<NutritionProps> = ({ logs, categories }) => {
         <div className="rounded-2xl border border-white/[0.08] bg-stone-900/60 px-4 py-3">
           <p className="text-xs uppercase tracking-wider text-stone-500">Sugar (g)</p>
           <p className="text-2xl font-semibold text-white tabular-nums">{totals.sugar.toFixed(1)}</p>
+        </div>
+      </div>
+
+      {/* Last 7 days trends */}
+      <div className="rounded-2xl border border-white/[0.08] bg-stone-900/60 px-4 py-4 space-y-4">
+        <div className="flex items-center gap-2">
+          <TrendingUp size={18} className="text-emerald-400" strokeWidth={2} />
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-stone-400">Last 7 days</h3>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <TrendChart
+            title="Calories"
+            data={trendDays}
+            valueKey="calories"
+            formatValue={(v) => Math.round(v).toString()}
+            barColor="bg-emerald-500"
+          />
+          <TrendChart
+            title="Protein (g)"
+            data={trendDays}
+            valueKey="protein"
+            formatValue={(v) => v.toFixed(1)}
+            barColor="bg-amber-500"
+          />
+          <TrendChart
+            title="Fat (g)"
+            data={trendDays}
+            valueKey="fat"
+            formatValue={(v) => v.toFixed(1)}
+            barColor="bg-rose-500/80"
+          />
+          <TrendChart
+            title="Sugar (g)"
+            data={trendDays}
+            valueKey="sugar"
+            formatValue={(v) => v.toFixed(1)}
+            barColor="bg-violet-500/80"
+          />
         </div>
       </div>
 
