@@ -45,6 +45,20 @@ export async function deleteFoodLog(id: string): Promise<boolean> {
   return true;
 }
 
+export async function updateFoodLogNutrition(
+  id: string,
+  nutrition: { calories?: number; fat?: number; protein?: number; sugar?: number }
+): Promise<boolean> {
+  const supabase = await getSupabase();
+  if (!supabase) return false;
+  const { error } = await supabase.from('food_logs').update(nutrition).eq('id', id);
+  if (error) {
+    console.error('updateFoodLogNutrition', error);
+    return false;
+  }
+  return true;
+}
+
 export async function fetchUserFoodItems(): Promise<UserFoodItemRow[]> {
   const supabase = await getSupabase();
   if (!supabase) return [];

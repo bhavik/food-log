@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { LogEntry, MealType, MealCategory, FoodItem } from './types';
 import { STORAGE_KEY, MEAL_CATEGORIES as DEFAULT_CATEGORIES } from './constants';
 import Dashboard from './components/Dashboard';
@@ -10,12 +10,56 @@ import type { CustomItemAction } from './components/CustomItemModal';
 import { useAuth } from './lib/auth-context';
 import * as data from './lib/data';
 
-const CATEGORIES_STORAGE_KEY = 'foodlog_v1_categories';
+const CATEGORIES_STORAGE_KEY = 'foodlog_v2_categories';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function isDbItemId(id: string): boolean {
   return UUID_REGEX.test(id);
+}
+
+function buildItemKey(item: Pick<FoodItem, 'name' | 'emoji'>): string {
+  return `${item.name}__${item.emoji}`;
+}
+
+function backfillLogsWithNutrition(
+  logs: LogEntry[],
+  categories: MealCategory[]
+): { updatedLogs: LogEntry[]; updates: { id: string; nutrition: Partial<LogEntry> }[] } {
+  const itemMap = new Map<string, FoodItem>();
+  categories.forEach((cat) => {
+    cat.items.forEach((item) => {
+      itemMap.set(buildItemKey(item), item);
+    });
+  });
+  const updates: { id: string; nutrition: Partial<LogEntry> }[] = [];
+  const updatedLogs = logs.map((log) => {
+    const hasNutrition =
+      log.calories !== undefined ||
+      log.fat !== undefined ||
+      log.protein !== undefined ||
+      log.sugar !== undefined;
+    if (hasNutrition) return log;
+    const item = itemMap.get(buildItemKey({ name: log.itemName, emoji: log.emoji }));
+    if (!item) return log;
+    const nutrition: Partial<LogEntry> = {
+      calories: item.calories,
+      fat: item.fat,
+      protein: item.protein,
+      sugar: item.sugar,
+    };
+    if (
+      nutrition.calories === undefined &&
+      nutrition.fat === undefined &&
+      nutrition.protein === undefined &&
+      nutrition.sugar === undefined
+    ) {
+      return log;
+    }
+    updates.push({ id: log.id, nutrition });
+    return { ...log, ...nutrition };
+  });
+  return { updatedLogs, updates };
 }
 
 const App: React.FC = () => {
@@ -25,6 +69,7 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'track' | 'history' | 'nutrition'>('track');
   const [toast, setToast] = useState<{ msg: string } | null>(null);
   const [syncing, setSyncing] = useState(false);
+  const backfillDoneRef = useRef(false);
 
   const isSignedIn = !!user;
   const userId = user?.uid ?? null;
@@ -52,8 +97,9 @@ const App: React.FC = () => {
     setSyncing(true);
     Promise.all([data.fetchFoodLogs(), data.fetchUserFoodItems()])
       .then(([logEntries, userItems]) => {
+        const mergedCategories = data.buildCategoriesWithUserItems(DEFAULT_CATEGORIES, userItems);
+        setCategories(mergedCategories);
         setLogs(logEntries);
-        setCategories(data.buildCategoriesWithUserItems(DEFAULT_CATEGORIES, userItems));
       })
       .catch(console.error)
       .finally(() => setSyncing(false));
@@ -68,6 +114,21 @@ const App: React.FC = () => {
     if (isSignedIn) return;
     localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(categories));
   }, [isSignedIn, categories]);
+
+  useEffect(() => {
+    if (backfillDoneRef.current) return;
+    if (logs.length === 0 || categories.length === 0) return;
+    const { updatedLogs, updates } = backfillLogsWithNutrition(logs, categories);
+    if (updates.length === 0) {
+      backfillDoneRef.current = true;
+      return;
+    }
+    setLogs(updatedLogs);
+    if (isSignedIn) {
+      Promise.all(updates.map((u) => data.updateFoodLogNutrition(u.id, u.nutrition))).catch(console.error);
+    }
+    backfillDoneRef.current = true;
+  }, [logs, categories, isSignedIn]);
 
   const addLog = useCallback(
     async (
