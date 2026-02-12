@@ -67,7 +67,7 @@ const App: React.FC = () => {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [categories, setCategories] = useState<MealCategory[]>(DEFAULT_CATEGORIES);
   const [activeTab, setActiveTab] = useState<'track' | 'history' | 'nutrition'>('track');
-  const [toast, setToast] = useState<{ msg: string } | null>(null);
+  const [toast, setToast] = useState<{ msg: string; error?: boolean } | null>(null);
   const [syncing, setSyncing] = useState(false);
   const backfillDoneRef = useRef(false);
 
@@ -150,16 +150,17 @@ const App: React.FC = () => {
         sugar: nutrition?.sugar,
       };
       if (isSignedIn && userId) {
-        const inserted = await data.insertFoodLog(newEntry, userId);
-        if (inserted) {
-          setLogs((prev) => [inserted, ...prev]);
-          setToast({ msg: name });
-          setTimeout(() => setToast(null), 2500);
-        } else {
+        const result = await data.insertFoodLog(newEntry, userId);
+        if ('error' in result) {
+          const errMsg = result.error;
           setLogs((prev) => [
             { ...newEntry, id: Math.random().toString(36).substring(7) },
             ...prev,
           ]);
+          setToast({ msg: errMsg, error: true });
+          setTimeout(() => setToast(null), 6000);
+        } else {
+          setLogs((prev) => [result.entry, ...prev]);
           setToast({ msg: name });
           setTimeout(() => setToast(null), 2500);
         }
@@ -321,9 +322,15 @@ const App: React.FC = () => {
 
       {toast && (
         <div className="fixed bottom-24 left-0 right-0 flex justify-center z-50 px-4 animate-fade-up">
-          <div className="bg-stone-800 text-white px-5 py-3.5 rounded-xl shadow-lg flex items-center gap-3 border border-white/[0.08]">
-            <div className="h-2.5 w-2.5 bg-emerald-400 rounded-full animate-pulse" />
-            <span className="text-base font-medium whitespace-nowrap">Added {toast.msg}</span>
+          <div className={`text-white px-5 py-3.5 rounded-xl shadow-lg flex items-center gap-3 border ${toast.error ? 'bg-amber-900/90 border-amber-500/30' : 'bg-stone-800 border-white/[0.08]'}`}>
+            {toast.error ? (
+              <div className="h-2.5 w-2.5 bg-amber-400 rounded-full" />
+            ) : (
+              <div className="h-2.5 w-2.5 bg-emerald-400 rounded-full animate-pulse" />
+            )}
+            <span className="text-base font-medium whitespace-nowrap">
+              {toast.error ? toast.msg : `Added ${toast.msg}`}
+            </span>
           </div>
         </div>
       )}

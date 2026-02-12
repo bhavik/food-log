@@ -17,9 +17,11 @@ export async function fetchFoodLogs(): Promise<LogEntry[]> {
   return (data as FoodLogRow[]).map(foodLogRowToEntry);
 }
 
-export async function insertFoodLog(entry: Omit<LogEntry, 'id'>, userId: string): Promise<LogEntry | null> {
+export type InsertFoodLogResult = { ok: true; entry: LogEntry } | { ok: false; error: string };
+
+export async function insertFoodLog(entry: Omit<LogEntry, 'id'>, userId: string): Promise<InsertFoodLogResult> {
   const supabase = await getSupabase();
-  if (!supabase) return null;
+  if (!supabase) return { ok: false, error: 'Supabase not configured' };
   const full: LogEntry = { ...entry, id: '' };
   const payload = entryToFoodLogPayload(full, userId);
   const { data, error } = await supabase
@@ -29,9 +31,10 @@ export async function insertFoodLog(entry: Omit<LogEntry, 'id'>, userId: string)
     .single();
   if (error) {
     console.error('insertFoodLog', error);
-    return null;
+    const msg = error?.message ?? String(error);
+    return { ok: false, error: msg };
   }
-  return foodLogRowToEntry(data as FoodLogRow);
+  return { ok: true, entry: foodLogRowToEntry(data as FoodLogRow) };
 }
 
 export async function deleteFoodLog(id: string): Promise<boolean> {

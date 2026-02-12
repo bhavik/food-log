@@ -4,3 +4,6 @@ alter table public.food_logs
   add column if not exists fat numeric,
   add column if not exists protein numeric,
   add column if not exists sugar numeric;
+
+-- Tell PostgREST to reload schema cache so API sees the new columns.
+notify pgrst, 'reload schema';
