@@ -17,6 +17,10 @@ Each row is a single “I ate this at this time” entry for one user.
 | `item_name` | `text`    | Display name (e.g. "Tea & Khakra") |
 | `emoji`     | `text`    | Single emoji (e.g. "☕") |
 | `is_custom` | `boolean` | `true` if user-created item, `false` if from default list |
+| `calories`  | `numeric` | Optional calories snapshot |
+| `fat`       | `numeric` | Optional fat snapshot (grams) |
+| `protein`   | `numeric` | Optional protein snapshot (grams) |
+| `sugar`     | `numeric` | Optional sugar snapshot (grams) |
 
 **Maps to:** your existing `LogEntry` (add `user_id`; `timestamp` → `logged_at`).
 
@@ -36,6 +40,9 @@ Stores only **custom items** a user added to their lists (Breakfast, Lunch, Dinn
 | `name`         | `text`  | Item name |
 | `emoji`        | `text`  | Single emoji |
 | `calories`     | `int`   | Optional |
+| `fat`          | `numeric` | Optional (grams) |
+| `protein`      | `numeric` | Optional (grams) |
+| `sugar`        | `numeric` | Optional (grams) |
 | `created_at`   | `timestamptz` | When they added it (optional) |
 
 **Maps to:** `FoodItem` + which `MealCategory.type` it belongs to. Your app builds `MealCategory[]` by: default categories from `constants` + these rows grouped by `category_type`.

@@ -22,7 +22,11 @@ export async function insertFoodLog(entry: Omit<LogEntry, 'id'>, userId: string)
   if (!supabase) return null;
   const full: LogEntry = { ...entry, id: '' };
   const payload = entryToFoodLogPayload(full, userId);
-  const { data, error } = await supabase.from('food_logs').insert(payload).select('id, user_id, logged_at, meal_type, item_name, emoji, is_custom').single();
+  const { data, error } = await supabase
+    .from('food_logs')
+    .insert(payload)
+    .select('id, user_id, logged_at, meal_type, item_name, emoji, is_custom, calories, fat, protein, sugar')
+    .single();
   if (error) {
     console.error('insertFoodLog', error);
     return null;
@@ -56,21 +60,39 @@ export async function insertUserFoodItem(
   userId: string,
   categoryType: MealType,
   name: string,
-  emoji: string
+  emoji: string,
+  nutrition?: Pick<FoodItem, 'calories' | 'fat' | 'protein' | 'sugar'>
 ): Promise<FoodItem | null> {
   const supabase = await getSupabase();
   if (!supabase) return null;
   const { data, error } = await supabase
     .from('user_food_items')
-    .insert({ user_id: userId, category_type: categoryType, name, emoji })
-    .select('id, user_id, category_type, name, emoji, calories, created_at')
+    .insert({
+      user_id: userId,
+      category_type: categoryType,
+      name,
+      emoji,
+      calories: nutrition?.calories,
+      fat: nutrition?.fat,
+      protein: nutrition?.protein,
+      sugar: nutrition?.sugar,
+    })
+    .select('id, user_id, category_type, name, emoji, calories, fat, protein, sugar, created_at')
     .single();
   if (error) {
     console.error('insertUserFoodItem', error);
     return null;
   }
   const row = data as UserFoodItemRow;
-  return { id: row.id, name: row.name, emoji: row.emoji, calories: row.calories };
+  return {
+    id: row.id,
+    name: row.name,
+    emoji: row.emoji,
+    calories: row.calories,
+    fat: row.fat,
+    protein: row.protein,
+    sugar: row.sugar,
+  };
 }
 
 export async function updateUserFoodItem(id: string, name: string): Promise<boolean> {
@@ -95,7 +117,17 @@ export function buildCategoriesWithUserItems(
   }
   for (const row of userItems) {
     const items = byCategory.get(row.category_type);
-    if (items) items.push({ id: row.id, name: row.name, emoji: row.emoji, calories: row.calories });
+    if (items) {
+      items.push({
+        id: row.id,
+        name: row.name,
+        emoji: row.emoji,
+        calories: row.calories,
+        fat: row.fat,
+        protein: row.protein,
+        sugar: row.sugar,
+      });
+    }
   }
   return defaultCategories.map(cat => ({
     ...cat,

@@ -5,6 +5,11 @@ export interface FoodItem {
   name: string;
   emoji: string;
   calories?: number;
+  fat?: number;
+  protein?: number;
+  sugar?: number;
+  recipe?: string;
+  link?: string;
 }
 
 export interface LogEntry {
@@ -14,6 +19,10 @@ export interface LogEntry {
   itemName: string;
   emoji: string;
   isCustom?: boolean;
+  calories?: number;
+  fat?: number;
+  protein?: number;
+  sugar?: number;
 }
 
 export interface MealCategory {
@@ -34,6 +43,10 @@ export interface FoodLogRow {
   item_name: string;
   emoji: string;
   is_custom: boolean;
+  calories?: number;
+  fat?: number;
+  protein?: number;
+  sugar?: number;
 }
 
 /** One row in `user_food_items` table (custom items only). */
@@ -44,6 +57,9 @@ export interface UserFoodItemRow {
   name: string;
   emoji: string;
   calories?: number;
+  fat?: number;
+  protein?: number;
+  sugar?: number;
   created_at?: string;
 }
 
@@ -56,6 +72,10 @@ export function foodLogRowToEntry(row: FoodLogRow): LogEntry {
     itemName: row.item_name,
     emoji: row.emoji,
     isCustom: row.is_custom,
+    calories: row.calories ?? undefined,
+    fat: row.fat ?? undefined,
+    protein: row.protein ?? undefined,
+    sugar: row.sugar ?? undefined,
   };
 }
 
@@ -68,5 +88,9 @@ export function entryToFoodLogPayload(entry: LogEntry, userId: string): Omit<Foo
     item_name: entry.itemName,
     emoji: entry.emoji,
     is_custom: entry.isCustom ?? false,
+    calories: entry.calories,
+    fat: entry.fat,
+    protein: entry.protein,
+    sugar: entry.sugar,
   };
 }

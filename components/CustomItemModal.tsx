@@ -8,7 +8,12 @@ export type CustomItemAction =
 
 interface CustomItemModalProps {
   onClose: () => void;
-  onAdd: (name: string, emoji: string, action: CustomItemAction) => void;
+  onAdd: (
+    name: string,
+    emoji: string,
+    action: CustomItemAction,
+    nutrition?: { calories?: number; fat?: number; protein?: number; sugar?: number }
+  ) => void;
   categoryLabels: { type: MealType; label: string }[];
 }
 
@@ -19,6 +24,10 @@ const CustomItemModal: React.FC<CustomItemModalProps> = ({ onClose, onAdd, categ
   const [selectedEmoji, setSelectedEmoji] = useState('🥗');
   const [savePermanently, setSavePermanently] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<MealType>('breakfast');
+  const [calories, setCalories] = useState('');
+  const [fat, setFat] = useState('');
+  const [protein, setProtein] = useState('');
+  const [sugar, setSugar] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,7 +35,16 @@ const CustomItemModal: React.FC<CustomItemModalProps> = ({ onClose, onAdd, categ
     const action: CustomItemAction = savePermanently
       ? { savePermanently: true, mealType: selectedCategory }
       : { savePermanently: false };
-    onAdd(name.trim(), selectedEmoji, action);
+    const nutrition =
+      savePermanently && (calories || fat || protein || sugar)
+        ? {
+            calories: calories ? Number(calories) : undefined,
+            fat: fat ? Number(fat) : undefined,
+            protein: protein ? Number(protein) : undefined,
+            sugar: sugar ? Number(sugar) : undefined,
+          }
+        : undefined;
+    onAdd(name.trim(), selectedEmoji, action, nutrition);
   };
 
   return (
@@ -123,6 +141,62 @@ const CustomItemModal: React.FC<CustomItemModalProps> = ({ onClose, onAdd, categ
                     {cat.label}
                   </button>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {savePermanently && (
+            <div>
+              <label className="block text-base font-medium text-stone-500 mb-3">Nutrition (per serving)</label>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs uppercase tracking-wider text-stone-500 mb-1">Calories</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={calories}
+                    onChange={(e) => setCalories(e.target.value)}
+                    placeholder="e.g. 220"
+                    className="w-full bg-stone-900/50 border border-white/[0.06] rounded-xl px-3 py-2 text-sm text-white placeholder:text-stone-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500/50"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs uppercase tracking-wider text-stone-500 mb-1">Protein (g)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    value={protein}
+                    onChange={(e) => setProtein(e.target.value)}
+                    placeholder="e.g. 12"
+                    className="w-full bg-stone-900/50 border border-white/[0.06] rounded-xl px-3 py-2 text-sm text-white placeholder:text-stone-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500/50"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs uppercase tracking-wider text-stone-500 mb-1">Fat (g)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    value={fat}
+                    onChange={(e) => setFat(e.target.value)}
+                    placeholder="e.g. 6"
+                    className="w-full bg-stone-900/50 border border-white/[0.06] rounded-xl px-3 py-2 text-sm text-white placeholder:text-stone-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500/50"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs uppercase tracking-wider text-stone-500 mb-1">Sugar (g)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    value={sugar}
+                    onChange={(e) => setSugar(e.target.value)}
+                    placeholder="e.g. 4"
+                    className="w-full bg-stone-900/50 border border-white/[0.06] rounded-xl px-3 py-2 text-sm text-white placeholder:text-stone-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500/50"
+                  />
+                </div>
               </div>
             </div>
           )}

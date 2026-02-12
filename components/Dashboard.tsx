@@ -4,12 +4,25 @@ import { MealType, LogEntry, MealCategory, FoodItem } from '../types';
 import CustomItemModal from './CustomItemModal';
 import { ChevronRightIcon, PlusIcon, Edit3Icon, XIcon, SearchIcon, ActivityIcon } from 'lucide-react';
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 interface DashboardProps {
-  onLog: (name: string, type: MealType, emoji: string, isCustom?: boolean) => void;
+  onLog: (
+    name: string,
+    type: MealType,
+    emoji: string,
+    isCustom?: boolean,
+    nutrition?: { calories?: number; fat?: number; protein?: number; sugar?: number }
+  ) => void;
   logs: LogEntry[];
   categories: MealCategory[];
   onUpdateTitle: (itemId: string, newTitle: string) => void;
-  onAddCustomItem: (name: string, emoji: string, action: import('./CustomItemModal').CustomItemAction) => void;
+  onAddCustomItem: (
+    name: string,
+    emoji: string,
+    action: import('./CustomItemModal').CustomItemAction,
+    nutrition?: { calories?: number; fat?: number; protein?: number; sugar?: number }
+  ) => void;
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ onLog, logs, categories, onUpdateTitle, onAddCustomItem }) => {
@@ -126,7 +139,15 @@ const Dashboard: React.FC<DashboardProps> = ({ onLog, logs, categories, onUpdate
                 }`}
               >
                 <button
-                  onClick={() => onLog(item.name, selectedType, item.emoji)}
+                  onClick={() => {
+                    const isCustomItem = item.id.startsWith('custom_') || UUID_REGEX.test(item.id);
+                    onLog(item.name, selectedType, item.emoji, isCustomItem, {
+                      calories: item.calories,
+                      fat: item.fat,
+                      protein: item.protein,
+                      sugar: item.sugar,
+                    });
+                  }}
                   className="flex-1 flex items-center gap-4 py-4 pl-4 pr-2 text-left"
                 >
                   <span className="text-3xl leading-none">{item.emoji}</span>
@@ -210,8 +231,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onLog, logs, categories, onUpdate
       {isModalOpen && (
         <CustomItemModal 
           onClose={() => setIsModalOpen(false)} 
-          onAdd={(name, emoji, action) => {
-            onAddCustomItem(name, emoji, action);
+          onAdd={(name, emoji, action, nutrition) => {
+            onAddCustomItem(name, emoji, action, nutrition);
             setIsModalOpen(false);
           }}
           categoryLabels={categories.map(c => ({ type: c.type, label: c.label }))}

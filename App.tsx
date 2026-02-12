@@ -5,6 +5,7 @@ import Dashboard from './components/Dashboard';
 import History from './components/History';
 import BottomNav from './components/BottomNav';
 import AuthButton from './components/AuthButton';
+import Nutrition from './components/Nutrition';
 import type { CustomItemAction } from './components/CustomItemModal';
 import { useAuth } from './lib/auth-context';
 import * as data from './lib/data';
@@ -21,7 +22,7 @@ const App: React.FC = () => {
   const { user } = useAuth();
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [categories, setCategories] = useState<MealCategory[]>(DEFAULT_CATEGORIES);
-  const [activeTab, setActiveTab] = useState<'track' | 'history'>('track');
+  const [activeTab, setActiveTab] = useState<'track' | 'history' | 'nutrition'>('track');
   const [toast, setToast] = useState<{ msg: string } | null>(null);
   const [syncing, setSyncing] = useState(false);
 
@@ -69,13 +70,23 @@ const App: React.FC = () => {
   }, [isSignedIn, categories]);
 
   const addLog = useCallback(
-    async (name: string, type: MealType, emoji: string, isCustom = false) => {
+    async (
+      name: string,
+      type: MealType,
+      emoji: string,
+      isCustom = false,
+      nutrition?: { calories?: number; fat?: number; protein?: number; sugar?: number }
+    ) => {
       const newEntry: Omit<LogEntry, 'id'> = {
         timestamp: Date.now(),
         mealType: type,
         itemName: name,
         emoji,
         isCustom,
+        calories: nutrition?.calories,
+        fat: nutrition?.fat,
+        protein: nutrition?.protein,
+        sugar: nutrition?.sugar,
       };
       if (isSignedIn && userId) {
         const inserted = await data.insertFoodLog(newEntry, userId);
@@ -115,30 +126,40 @@ const App: React.FC = () => {
   );
 
   const handleCustomItem = useCallback(
-    async (name: string, emoji: string, action: CustomItemAction) => {
+    async (
+      name: string,
+      emoji: string,
+      action: CustomItemAction,
+      nutrition?: { calories?: number; fat?: number; protein?: number; sugar?: number }
+    ) => {
       if (action.savePermanently && action.mealType) {
         if (isSignedIn && userId) {
           const newItem = await data.insertUserFoodItem(
             userId,
             action.mealType,
             name,
-            emoji
+            emoji,
+            nutrition
           );
           if (newItem) {
             addItemToCategory(action.mealType, newItem);
-            await addLog(name, action.mealType, emoji, true);
+            await addLog(name, action.mealType, emoji, true, nutrition);
           }
         } else {
           const newItem: FoodItem = {
             id: `custom_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
             name,
             emoji,
+            calories: nutrition?.calories,
+            fat: nutrition?.fat,
+            protein: nutrition?.protein,
+            sugar: nutrition?.sugar,
           };
           addItemToCategory(action.mealType, newItem);
-          await addLog(name, action.mealType, emoji, true);
+          await addLog(name, action.mealType, emoji, true, nutrition);
         }
       } else {
-        await addLog(name, 'other', emoji, true);
+        await addLog(name, 'other', emoji, true, nutrition);
       }
     },
     [isSignedIn, userId, addItemToCategory, addLog]
@@ -220,7 +241,7 @@ const App: React.FC = () => {
       )}
 
       <main className="max-w-xl mx-auto px-4 sm:px-5 pt-5">
-        {activeTab === 'track' ? (
+        {activeTab === 'track' && (
           <Dashboard
             onLog={addLog}
             logs={logs}
@@ -228,8 +249,12 @@ const App: React.FC = () => {
             onUpdateTitle={updateItemTitle}
             onAddCustomItem={handleCustomItem}
           />
-        ) : (
+        )}
+        {activeTab === 'history' && (
           <History logs={logs} onDelete={deleteLog} onImport={handleImportLogs} />
+        )}
+        {activeTab === 'nutrition' && (
+          <Nutrition logs={logs} categories={categories} />
         )}
       </main>
 
