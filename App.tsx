@@ -1,16 +1,22 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { LogEntry, MealType, MealCategory, FoodItem } from './types';
 import { STORAGE_KEY, MEAL_CATEGORIES as DEFAULT_CATEGORIES } from './constants';
+import { DIET_PLANS, DEFAULT_DIET_PLAN_ID, getDefaultCategories } from './dietPlans';
+import type { DietPlanId } from './dietPlans';
 import Dashboard from './components/Dashboard';
 import History from './components/History';
 import BottomNav from './components/BottomNav';
 import AuthButton from './components/AuthButton';
 import Nutrition from './components/Nutrition';
+import LoginPage from './components/LoginPage';
+import OnboardingDiet from './components/OnboardingDiet';
+import HomePage from './components/HomePage';
 import type { CustomItemAction } from './components/CustomItemModal';
 import { useAuth } from './lib/auth-context';
 import * as data from './lib/data';
 
 const CATEGORIES_STORAGE_KEY = 'foodlog_v2_categories';
+const DIET_PLAN_STORAGE_KEY = 'foodlog_diet_plan_id';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -62,6 +68,12 @@ function backfillLogsWithNutrition(
   return { updatedLogs, updates };
 }
 
+function getStoredDietPlanId(): DietPlanId | null {
+  const id = localStorage.getItem(DIET_PLAN_STORAGE_KEY);
+  if (id && id in DIET_PLANS) return id as DietPlanId;
+  return null;
+}
+
 const App: React.FC = () => {
   const { user } = useAuth();
   const [logs, setLogs] = useState<LogEntry[]>([]);
@@ -69,6 +81,14 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'track' | 'history' | 'nutrition'>('track');
   const [toast, setToast] = useState<{ msg: string; error?: boolean } | null>(null);
   const [syncing, setSyncing] = useState(false);
+  const [showLoginPage, setShowLoginPage] = useState(false);
+  const [showHomepage, setShowHomepage] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    const hasDiet = localStorage.getItem(DIET_PLAN_STORAGE_KEY);
+    const hasCategories = localStorage.getItem(CATEGORIES_STORAGE_KEY);
+    return !hasDiet && !hasCategories;
+  });
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const backfillDoneRef = useRef(false);
 
   const isSignedIn = !!user;
@@ -88,6 +108,9 @@ const App: React.FC = () => {
       if (savedCats) {
         try {
           setCategories(JSON.parse(savedCats));
+          if (!localStorage.getItem(DIET_PLAN_STORAGE_KEY)) {
+            localStorage.setItem(DIET_PLAN_STORAGE_KEY, DEFAULT_DIET_PLAN_ID);
+          }
         } catch (e) {
           console.error(e);
         }
@@ -95,15 +118,23 @@ const App: React.FC = () => {
       return;
     }
     setSyncing(true);
+    const dietId = getStoredDietPlanId();
+    const baseCategories = dietId ? DIET_PLANS[dietId].categories : getDefaultCategories();
     Promise.all([data.fetchFoodLogs(), data.fetchUserFoodItems()])
       .then(([logEntries, userItems]) => {
-        const mergedCategories = data.buildCategoriesWithUserItems(DEFAULT_CATEGORIES, userItems);
+        const mergedCategories = data.buildCategoriesWithUserItems(baseCategories, userItems);
         setCategories(mergedCategories);
         setLogs(logEntries);
       })
       .catch(console.error)
       .finally(() => setSyncing(false));
   }, [isSignedIn]);
+
+  const handleDietSelect = useCallback((dietPlanId: DietPlanId) => {
+    localStorage.setItem(DIET_PLAN_STORAGE_KEY, dietPlanId);
+    setCategories(DIET_PLANS[dietPlanId].categories);
+    setShowOnboarding(false);
+  }, []);
 
   useEffect(() => {
     if (isSignedIn) return;
@@ -138,6 +169,12 @@ const App: React.FC = () => {
       isCustom = false,
       nutrition?: { calories?: number; fat?: number; protein?: number; sugar?: number }
     ) => {
+      if (!isSignedIn) {
+        setToast({ msg: 'Sign in to track food', error: true });
+        setTimeout(() => setToast(null), 3000);
+        setShowLoginPage(true);
+        return;
+      }
       const newEntry: Omit<LogEntry, 'id'> = {
         timestamp: Date.now(),
         mealType: type,
@@ -149,7 +186,7 @@ const App: React.FC = () => {
         protein: nutrition?.protein,
         sugar: nutrition?.sugar,
       };
-      if (isSignedIn && userId) {
+      if (userId) {
         const result = await data.insertFoodLog(newEntry, userId);
         if ('error' in result) {
           const errMsg = result.error;
@@ -164,13 +201,6 @@ const App: React.FC = () => {
           setToast({ msg: name });
           setTimeout(() => setToast(null), 2500);
         }
-      } else {
-        setLogs((prev) => [
-          { ...newEntry, id: Math.random().toString(36).substring(7) },
-          ...prev,
-        ]);
-        setToast({ msg: name });
-        setTimeout(() => setToast(null), 2500);
       }
     },
     [isSignedIn, userId]
@@ -271,11 +301,43 @@ const App: React.FC = () => {
     []
   );
 
+  if (showLoginPage) {
+    return (
+      <LoginPage
+        onBack={() => setShowLoginPage(false)}
+        message="Sign in to track your meals and see your nutrition history."
+      />
+    );
+  }
+
+  if (!isSignedIn && showHomepage) {
+    return (
+      <HomePage
+        onGetStarted={() => {
+          setShowHomepage(false);
+          setShowOnboarding(true);
+        }}
+        onSignIn={() => setShowLoginPage(true)}
+        isSignedIn={isSignedIn}
+      />
+    );
+  }
+
+  if (showOnboarding) {
+    const hasExistingDiet = getStoredDietPlanId() !== null;
+    return (
+      <OnboardingDiet
+        onSelect={handleDietSelect}
+        onBack={hasExistingDiet ? () => setShowOnboarding(false) : undefined}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen pb-28 antialiased">
       <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-[var(--bg-primary)]/90 backdrop-blur-xl">
         <div className="max-w-xl mx-auto px-4 sm:px-5 pt-5 pb-4 flex justify-between items-start gap-4">
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p className="text-base text-stone-500 mb-0.5">{dateStr}</p>
             <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight title-foodlog">
               <span className="title-food">Food</span>
@@ -286,11 +348,15 @@ const App: React.FC = () => {
                 Welcome, {user.displayName || user.email || 'back'}
               </p>
             )}
+            <button
+              type="button"
+              onClick={() => setShowOnboarding(true)}
+              className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-emerald-950 bg-emerald-400 hover:bg-emerald-300 border border-emerald-500/60 rounded-lg px-4 py-2 transition-smooth shadow-sm"
+            >
+              Change diet plan
+            </button>
           </div>
-          <div className="flex flex-col items-end gap-1">
-            <div className="px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
-              <span className="text-[10px] font-semibold text-stone-400 uppercase tracking-widest">System ready</span>
-            </div>
+          <div className="flex items-center pt-1">
             <AuthButton isSignedIn={isSignedIn} />
           </div>
         </div>

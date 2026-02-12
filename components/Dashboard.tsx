@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { MealType, LogEntry, MealCategory, FoodItem } from '../types';
 import CustomItemModal from './CustomItemModal';
-import { ChevronRightIcon, PlusIcon, Edit3Icon, XIcon, SearchIcon, ActivityIcon } from 'lucide-react';
+import { ChevronRightIcon, PlusIcon, Edit3Icon, XIcon, SearchIcon } from 'lucide-react';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -109,18 +109,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onLog, logs, categories, onUpdate
       </div>
 
       <div className="space-y-4">
-        <div className="flex items-center justify-between px-0.5">
-          <div className="flex items-center gap-2">
-            <ActivityIcon size={16} className="text-amber-500" strokeWidth={2} />
-            <h2 className="text-base font-semibold uppercase tracking-wider text-stone-400">
-              Available protocols
-            </h2>
-          </div>
-          <span className="text-xs font-semibold text-stone-500 bg-white/5 px-3 py-1.5 rounded-full border border-white/5 uppercase tracking-tight">
-            {todayLogs.filter(l => l.mealType === selectedType).length} Recorded
-          </span>
-        </div>
-
         <div className="space-y-2">
           {filteredItems.length === 0 ? (
             <p className="py-8 text-center text-base text-stone-500">
