@@ -11,6 +11,7 @@ import Nutrition from './components/Nutrition';
 import LoginPage from './components/LoginPage';
 import OnboardingDiet from './components/OnboardingDiet';
 import HomePage from './components/HomePage';
+import AddCustomItemPage from './components/AddCustomItemPage';
 import type { CustomItemAction } from './components/CustomItemModal';
 import { useAuth } from './lib/auth-context';
 import * as data from './lib/data';
@@ -83,6 +84,8 @@ const App: React.FC = () => {
   const [syncing, setSyncing] = useState(false);
   const [showLoginPage, setShowLoginPage] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showCustomItemPage, setShowCustomItemPage] = useState(false);
+  const [customItemInitialName, setCustomItemInitialName] = useState('');
   const backfillDoneRef = useRef(false);
 
   const isSignedIn = !!user;
@@ -392,13 +395,28 @@ const App: React.FC = () => {
       )}
 
       <main className="max-w-xl mx-auto px-4 sm:px-5 pt-5">
-        {activeTab === 'track' && (
+        {activeTab === 'track' && showCustomItemPage && (
+          <AddCustomItemPage
+            onBack={() => { setShowCustomItemPage(false); setCustomItemInitialName(''); }}
+            onAdd={(name, emoji, action, nutrition) => {
+              handleCustomItem(name, emoji, action, nutrition);
+              setShowCustomItemPage(false);
+              setCustomItemInitialName('');
+            }}
+            categoryLabels={categories.map((c) => ({ type: c.type, label: c.label }))}
+            initialName={customItemInitialName}
+          />
+        )}
+        {activeTab === 'track' && !showCustomItemPage && (
           <Dashboard
             onLog={addLog}
             logs={logs}
             categories={categories}
             onUpdateTitle={updateItemTitle}
-            onAddCustomItem={handleCustomItem}
+            onOpenAddCustomPage={(initialName) => {
+              setCustomItemInitialName(initialName ?? '');
+              setShowCustomItemPage(true);
+            }}
           />
         )}
         {activeTab === 'history' && (

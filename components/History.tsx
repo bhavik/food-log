@@ -35,8 +35,9 @@ function formatDayHeader(ts: number): string {
 
 const History: React.FC<HistoryProps> = ({ logs, onDelete, onImport }) => {
   const [filter, setFilter] = useState<FilterType>('day');
-  const [monthOffset, setMonthOffset] = useState(0); // for month view: 0 = current month
+  const [monthOffset, setMonthOffset] = useState(0);
   const [selectedDateKey, setSelectedDateKey] = useState<string | null>(null);
+  const [dayViewDateKey, setDayViewDateKey] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const now = Date.now();
@@ -124,6 +125,11 @@ const History: React.FC<HistoryProps> = ({ logs, onDelete, onImport }) => {
     return monthGrid.logsByKey[selectedDateKey] || [];
   }, [selectedDateKey, monthGrid.logsByKey]);
 
+  const dayViewLogs = useMemo(() => {
+    if (!dayViewDateKey) return [];
+    return logs.filter(log => dateKey(log.timestamp) === dayViewDateKey);
+  }, [dayViewDateKey, logs]);
+
   const handleExport = () => {
     const dataStr = JSON.stringify(logs, null, 2);
     const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
@@ -152,8 +158,14 @@ const History: React.FC<HistoryProps> = ({ logs, onDelete, onImport }) => {
     reader.readAsText(file);
   };
 
+  const dayViewGroups = useMemo(() => {
+    if (dayViewDateKey) return { [dayViewDateKey]: dayViewLogs };
+    return groupedByDateDay;
+  }, [dayViewDateKey, dayViewLogs, groupedByDateDay]);
+
   const renderDayView = () => {
-    if (Object.keys(groupedByDateDay).length === 0) {
+    const groups = dayViewGroups;
+    if (Object.keys(groups).length === 0 || Object.values(groups).every(arr => arr.length === 0)) {
       return (
         <div className="flex flex-col items-center justify-center py-24 text-center">
           <div className="h-14 w-14 bg-stone-800 rounded-2xl flex items-center justify-center mb-6 text-stone-600">
@@ -161,15 +173,33 @@ const History: React.FC<HistoryProps> = ({ logs, onDelete, onImport }) => {
           </div>
           <h3 className="text-base font-medium text-stone-500">No entries yet</h3>
           <p className="text-sm text-stone-600 mt-1">Log something from the Log tab</p>
+          {dayViewDateKey && (
+            <button
+              type="button"
+              onClick={() => setDayViewDateKey(null)}
+              className="mt-4 text-sm text-emerald-400 hover:text-emerald-300"
+            >
+              Back to today
+            </button>
+          )}
         </div>
       );
     }
     return (
       <div className="space-y-6">
-        {Object.entries(groupedByDateDay).map(([date, entries]) => (
+        {dayViewDateKey && (
+          <button
+            type="button"
+            onClick={() => setDayViewDateKey(null)}
+            className="text-sm text-stone-500 hover:text-stone-300"
+          >
+            ← Back to today
+          </button>
+        )}
+        {Object.entries(groups).map(([date, entries]) => (
           <div key={date}>
             <h3 className="text-base font-medium text-stone-500 mb-4">
-              {new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+              {new Date(date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
             </h3>
             <div className="space-y-2">
               {(entries as LogEntry[]).map((log) => (
@@ -220,10 +250,16 @@ const History: React.FC<HistoryProps> = ({ logs, onDelete, onImport }) => {
         <div className="flex gap-3 min-w-max pb-2">
           {weekDays.map(dayStart => {
             const dayLogs = weekLogsByDay[dayStart] || [];
+            const dk = dateKey(dayStart);
             return (
-              <div
+              <button
                 key={dayStart}
-                className="w-[160px] shrink-0 rounded-xl bg-stone-800/50 border border-white/[0.06] overflow-hidden"
+                type="button"
+                onClick={() => {
+                  setDayViewDateKey(dk);
+                  setFilter('day');
+                }}
+                className="w-[160px] shrink-0 rounded-xl bg-stone-800/50 border border-white/[0.06] overflow-hidden text-left hover:bg-stone-800/70 hover:border-white/[0.1] transition-smooth focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
               >
                 <div className="px-3 py-2 border-b border-white/[0.06] bg-stone-800/80">
                   <p className="text-sm font-medium text-stone-400">{formatDayHeader(dayStart)}</p>
@@ -248,7 +284,8 @@ const History: React.FC<HistoryProps> = ({ logs, onDelete, onImport }) => {
                           </p>
                         </div>
                         <button
-                          onClick={() => onDelete(log.id)}
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); onDelete(log.id); }}
                           className="p-1.5 rounded text-stone-500 opacity-0 group-hover/row:opacity-100 hover:text-red-400 hover:bg-red-500/10 transition-smooth"
                           aria-label="Delete"
                         >
@@ -258,7 +295,7 @@ const History: React.FC<HistoryProps> = ({ logs, onDelete, onImport }) => {
                     ))
                   )}
                 </div>
-              </div>
+              </button>
             );
           })}
         </div>
@@ -371,7 +408,10 @@ const History: React.FC<HistoryProps> = ({ logs, onDelete, onImport }) => {
         {(['day', 'week', 'month'] as FilterType[]).map((f) => (
           <button
             key={f}
-            onClick={() => setFilter(f)}
+            onClick={() => {
+              setFilter(f);
+              if (f === 'day') setDayViewDateKey(null);
+            }}
             className={`flex-1 py-3 text-base font-medium rounded-lg transition-smooth capitalize ${
               filter === f ? 'bg-stone-700 text-white' : 'text-stone-500 hover:text-stone-300'
             }`}
