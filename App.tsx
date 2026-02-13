@@ -82,12 +82,6 @@ const App: React.FC = () => {
   const [toast, setToast] = useState<{ msg: string; error?: boolean } | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [showLoginPage, setShowLoginPage] = useState(false);
-  const [showHomepage, setShowHomepage] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    const hasDiet = localStorage.getItem(DIET_PLAN_STORAGE_KEY);
-    const hasCategories = localStorage.getItem(CATEGORIES_STORAGE_KEY);
-    return !hasDiet && !hasCategories;
-  });
   const [showOnboarding, setShowOnboarding] = useState(false);
   const backfillDoneRef = useRef(false);
 
@@ -134,7 +128,10 @@ const App: React.FC = () => {
     localStorage.setItem(DIET_PLAN_STORAGE_KEY, dietPlanId);
     setCategories(DIET_PLANS[dietPlanId].categories);
     setShowOnboarding(false);
-  }, []);
+    if (!isSignedIn) {
+      setShowLoginPage(true);
+    }
+  }, [isSignedIn]);
 
   useEffect(() => {
     if (isSignedIn) return;
@@ -310,25 +307,30 @@ const App: React.FC = () => {
     );
   }
 
-  if (!isSignedIn && showHomepage) {
+  if (!isSignedIn && showOnboarding) {
+    return (
+      <OnboardingDiet
+        onSelect={handleDietSelect}
+        onBack={() => setShowOnboarding(false)}
+      />
+    );
+  }
+
+  if (!isSignedIn) {
     return (
       <HomePage
-        onGetStarted={() => {
-          setShowHomepage(false);
-          setShowOnboarding(true);
-        }}
+        onGetStarted={() => setShowOnboarding(true)}
         onSignIn={() => setShowLoginPage(true)}
-        isSignedIn={isSignedIn}
+        isSignedIn={false}
       />
     );
   }
 
   if (showOnboarding) {
-    const hasExistingDiet = getStoredDietPlanId() !== null;
     return (
       <OnboardingDiet
         onSelect={handleDietSelect}
-        onBack={hasExistingDiet ? () => setShowOnboarding(false) : undefined}
+        onBack={() => setShowOnboarding(false)}
       />
     );
   }
@@ -348,13 +350,15 @@ const App: React.FC = () => {
                 Welcome, {user.displayName || user.email || 'back'}
               </p>
             )}
-            <button
-              type="button"
-              onClick={() => setShowOnboarding(true)}
-              className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-emerald-950 bg-emerald-400 hover:bg-emerald-300 border border-emerald-500/60 rounded-lg px-4 py-2 transition-smooth shadow-sm"
-            >
-              Change diet plan
-            </button>
+            {logs.length === 0 && (
+              <button
+                type="button"
+                onClick={() => setShowOnboarding(true)}
+                className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-emerald-950 bg-emerald-400 hover:bg-emerald-300 border border-emerald-500/60 rounded-lg px-4 py-2 transition-smooth shadow-sm"
+              >
+                Change diet plan
+              </button>
+            )}
           </div>
           <div className="flex items-center pt-1">
             <AuthButton isSignedIn={isSignedIn} />
