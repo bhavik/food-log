@@ -4,24 +4,31 @@ import { LeafIcon, TrendingUp } from 'lucide-react';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const LAST_N_DAYS = 7;
+const NUTRITION_TIMEZONE = 'America/Los_Angeles';
 
 interface NutritionProps {
   logs: LogEntry[];
   categories: MealCategory[];
 }
 
-function dateKey(ts: number): string {
-  return new Date(ts).toLocaleDateString('en-CA');
+/** Date (YYYY-MM-DD) for a timestamp in Pacific time. Used for daily totals and trends. */
+function dateKeyPacific(ts: number): string {
+  return new Date(ts).toLocaleDateString('en-CA', { timeZone: NUTRITION_TIMEZONE });
+}
+
+/** Today's date (YYYY-MM-DD) in Pacific time. */
+function todayPacific(): string {
+  return new Date().toLocaleDateString('en-CA', { timeZone: NUTRITION_TIMEZONE });
 }
 
 function formatDateLabel(dateStr: string): string {
-  const d = new Date(`${dateStr}T00:00:00`);
-  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  const d = new Date(`${dateStr}T12:00:00`);
+  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: NUTRITION_TIMEZONE });
 }
 
 function formatChartDayLabel(dateStr: string): string {
-  const d = new Date(`${dateStr}T00:00:00`);
-  return d.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' });
+  const d = new Date(`${dateStr}T12:00:00`);
+  return d.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', timeZone: NUTRITION_TIMEZONE });
 }
 
 type NutritionTotals = {
@@ -82,7 +89,7 @@ function TrendChart({
 }
 
 const Nutrition: React.FC<NutritionProps> = ({ logs, categories }) => {
-  const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [selectedDate, setSelectedDate] = useState(() => todayPacific());
 
   const itemLookup = useMemo(() => {
     const map = new Map<string, FoodItem>();
@@ -95,7 +102,7 @@ const Nutrition: React.FC<NutritionProps> = ({ logs, categories }) => {
   }, [categories]);
 
   const dayLogs = useMemo(
-    () => logs.filter((log) => dateKey(log.timestamp) === selectedDate),
+    () => logs.filter((log) => dateKeyPacific(log.timestamp) === selectedDate),
     [logs, selectedDate]
   );
 
@@ -120,14 +127,12 @@ const Nutrition: React.FC<NutritionProps> = ({ logs, categories }) => {
   }, [dayLogs, itemLookup]);
 
   const trendDays = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayStart = today.getTime();
+    const now = Date.now();
     const days: { dateKey: string; label: string; calories: number; protein: number; fat: number; sugar: number }[] = [];
     for (let i = LAST_N_DAYS - 1; i >= 0; i--) {
-      const dayStart = todayStart - i * DAY_MS;
-      const dk = dateKey(dayStart);
-      const dayLogsForDate = logs.filter((log) => dateKey(log.timestamp) === dk);
+      const dayStart = now - i * DAY_MS;
+      const dk = dateKeyPacific(dayStart);
+      const dayLogsForDate = logs.filter((log) => dateKeyPacific(log.timestamp) === dk);
       const acc = { ...EMPTY_TOTALS };
       dayLogsForDate.forEach((log) => {
         const item = itemLookup.get(buildItemKey({ name: log.itemName, emoji: log.emoji }));
