@@ -89,6 +89,12 @@ const App: React.FC = () => {
   const userId = user?.uid ?? null;
 
   useEffect(() => {
+    if (isSignedIn) {
+      setShowLoginPage(false);
+    }
+  }, [isSignedIn]);
+
+  useEffect(() => {
     if (!isSignedIn) {
       const savedLogs = localStorage.getItem(STORAGE_KEY);
       if (savedLogs) {
@@ -222,6 +228,15 @@ const App: React.FC = () => {
       nutrition?: { calories?: number; fat?: number; protein?: number; sugar?: number }
     ) => {
       if (action.savePermanently && action.mealType) {
+        const fallbackItem: FoodItem = {
+          id: `custom_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+          name,
+          emoji,
+          calories: nutrition?.calories,
+          fat: nutrition?.fat,
+          protein: nutrition?.protein,
+          sugar: nutrition?.sugar,
+        };
         if (isSignedIn && userId) {
           const newItem = await data.insertUserFoodItem(
             userId,
@@ -233,18 +248,14 @@ const App: React.FC = () => {
           if (newItem) {
             addItemToCategory(action.mealType, newItem);
             await addLog(name, action.mealType, emoji, true, nutrition);
+          } else {
+            addItemToCategory(action.mealType, fallbackItem);
+            await addLog(name, action.mealType, emoji, true, nutrition);
+            setToast({ msg: 'Item added to list but couldn\'t save to cloud.', error: true });
+            setTimeout(() => setToast(null), 5000);
           }
         } else {
-          const newItem: FoodItem = {
-            id: `custom_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-            name,
-            emoji,
-            calories: nutrition?.calories,
-            fat: nutrition?.fat,
-            protein: nutrition?.protein,
-            sugar: nutrition?.sugar,
-          };
-          addItemToCategory(action.mealType, newItem);
+          addItemToCategory(action.mealType, fallbackItem);
           await addLog(name, action.mealType, emoji, true, nutrition);
         }
       } else {
