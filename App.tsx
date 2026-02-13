@@ -309,7 +309,7 @@ const App: React.FC = () => {
     []
   );
 
-  if (showLoginPage) {
+  if (showLoginPage && !isSignedIn) {
     return (
       <LoginPage
         onBack={() => setShowLoginPage(false)}
