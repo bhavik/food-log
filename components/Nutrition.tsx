@@ -4,32 +4,70 @@ import { LeafIcon, TrendingUp } from 'lucide-react';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const LAST_N_DAYS = 7;
-const NUTRITION_TIMEZONE = 'America/Los_Angeles';
+const PACIFIC = 'America/Los_Angeles';
 
 interface NutritionProps {
   logs: LogEntry[];
   categories: MealCategory[];
 }
 
-/** Date (YYYY-MM-DD) for a timestamp in Pacific time. Used for daily totals and trends. */
+/** YYYY-MM-DD in Pacific. Falls back to local date if Intl/timeZone fails (never throws). */
+function toPacificDateKey(date: Date): string {
+  try {
+    const f = new Intl.DateTimeFormat('en-CA', {
+      timeZone: PACIFIC,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
+    const parts = f.formatToParts(date);
+    const y = parts.find((p) => p.type === 'year')?.value;
+    const m = parts.find((p) => p.type === 'month')?.value;
+    const d = parts.find((p) => p.type === 'day')?.value;
+    if (y && m && d) return `${y}-${m}-${d}`;
+  } catch {
+    /* timeZone or formatToParts not supported */
+  }
+  const y = date.getFullYear();
+  const m = date.getMonth() + 1;
+  const day = date.getDate();
+  const ms = m < 10 ? '0' + m : String(m);
+  const ds = day < 10 ? '0' + day : String(day);
+  return `${y}-${ms}-${ds}`;
+}
+
 function dateKeyPacific(ts: number): string {
-  return new Date(ts).toLocaleDateString('en-CA', { timeZone: NUTRITION_TIMEZONE });
+  return toPacificDateKey(new Date(ts));
 }
 
-/** Today's date (YYYY-MM-DD) in Pacific time. */
 function todayPacific(): string {
-  return new Date().toLocaleDateString('en-CA', { timeZone: NUTRITION_TIMEZONE });
+  return toPacificDateKey(new Date());
 }
 
-/** Format YYYY-MM-DD as a label in Pacific (e.g. "Thu, Feb 12"). Parse as UTC noon so the calendar date is unambiguous. */
+/** Format YYYY-MM-DD as "Thu, Feb 12". Pacific when possible; never throws. */
 function formatDateLabel(dateStr: string): string {
-  const d = new Date(`${dateStr}T12:00:00Z`);
-  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: NUTRITION_TIMEZONE });
+  const d = new Date(dateStr + 'T12:00:00Z');
+  if (Number.isNaN(d.getTime())) return dateStr;
+  try {
+    return d.toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      timeZone: PACIFIC,
+    });
+  } catch {
+    return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  }
 }
 
 function formatChartDayLabel(dateStr: string): string {
-  const d = new Date(`${dateStr}T12:00:00Z`);
-  return d.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', timeZone: NUTRITION_TIMEZONE });
+  const d = new Date(dateStr + 'T12:00:00Z');
+  if (Number.isNaN(d.getTime())) return dateStr;
+  try {
+    return d.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', timeZone: PACIFIC });
+  } catch {
+    return d.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' });
+  }
 }
 
 type NutritionTotals = {
@@ -79,7 +117,7 @@ function TrendChart({
                 />
               </div>
               <span className="text-[10px] text-stone-500 truncate w-full text-center">
-                {day.label.split(' ')[0]}
+                {day.label ? day.label.split(' ')[0] : day.dateKey}
               </span>
             </div>
           );
@@ -94,16 +132,14 @@ const Nutrition: React.FC<NutritionProps> = ({ logs, categories }) => {
 
   const itemLookup = useMemo(() => {
     const map = new Map<string, FoodItem>();
-    categories.forEach((cat) => {
-      cat.items.forEach((item) => {
-        map.set(buildItemKey(item), item);
-      });
+    (categories || []).forEach((cat) => {
+      (cat.items || []).forEach((item) => map.set(buildItemKey(item), item));
     });
     return map;
   }, [categories]);
 
   const dayLogs = useMemo(
-    () => logs.filter((log) => dateKeyPacific(log.timestamp) === selectedDate),
+    () => (logs || []).filter((log) => dateKeyPacific(log.timestamp) === selectedDate),
     [logs, selectedDate]
   );
 
@@ -129,11 +165,12 @@ const Nutrition: React.FC<NutritionProps> = ({ logs, categories }) => {
 
   const trendDays = useMemo(() => {
     const now = Date.now();
-    const days: { dateKey: string; label: string; calories: number; protein: number; fat: number; sugar: number }[] = [];
+    const list: TrendDay[] = [];
+    const logList = logs || [];
     for (let i = LAST_N_DAYS - 1; i >= 0; i--) {
       const dayStart = now - i * DAY_MS;
       const dk = dateKeyPacific(dayStart);
-      const dayLogsForDate = logs.filter((log) => dateKeyPacific(log.timestamp) === dk);
+      const dayLogsForDate = logList.filter((log) => dateKeyPacific(log.timestamp) === dk);
       const acc = { ...EMPTY_TOTALS };
       dayLogsForDate.forEach((log) => {
         const item = itemLookup.get(buildItemKey({ name: log.itemName, emoji: log.emoji }));
@@ -146,7 +183,7 @@ const Nutrition: React.FC<NutritionProps> = ({ logs, categories }) => {
         if (f != null) acc.fat += f;
         if (sug != null) acc.sugar += sug;
       });
-      days.push({
+      list.push({
         dateKey: dk,
         label: formatChartDayLabel(dk),
         calories: acc.calories,
@@ -155,7 +192,7 @@ const Nutrition: React.FC<NutritionProps> = ({ logs, categories }) => {
         sugar: acc.sugar,
       });
     }
-    return days;
+    return list;
   }, [logs, itemLookup]);
 
   return (
@@ -192,7 +229,6 @@ const Nutrition: React.FC<NutritionProps> = ({ logs, categories }) => {
         </div>
       </div>
 
-      {/* Last 7 days trends */}
       <div className="rounded-2xl border border-white/[0.08] bg-stone-900/60 px-4 py-4 space-y-4">
         <div className="flex items-center gap-2">
           <TrendingUp size={18} className="text-emerald-400" strokeWidth={2} />
@@ -248,7 +284,7 @@ const Nutrition: React.FC<NutritionProps> = ({ logs, categories }) => {
             <p className="text-sm text-stone-500">No logs for this day.</p>
           </div>
         )}
-        {resolvedLogs.map(({ log, item, calories, protein, fat, sugar }) => (
+        {resolvedLogs.map(({ log, calories, protein, fat, sugar }) => (
           <div
             key={log.id}
             className="flex items-center justify-between py-3 px-4 bg-stone-800/40 rounded-xl border border-transparent hover:border-white/[0.06] transition-smooth"
