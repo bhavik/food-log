@@ -21,13 +21,14 @@ function todayPacific(): string {
   return new Date().toLocaleDateString('en-CA', { timeZone: NUTRITION_TIMEZONE });
 }
 
+/** Format YYYY-MM-DD as a label in Pacific (e.g. "Thu, Feb 12"). Parse as UTC noon so the calendar date is unambiguous. */
 function formatDateLabel(dateStr: string): string {
-  const d = new Date(`${dateStr}T12:00:00`);
+  const d = new Date(`${dateStr}T12:00:00Z`);
   return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: NUTRITION_TIMEZONE });
 }
 
 function formatChartDayLabel(dateStr: string): string {
-  const d = new Date(`${dateStr}T12:00:00`);
+  const d = new Date(`${dateStr}T12:00:00Z`);
   return d.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', timeZone: NUTRITION_TIMEZONE });
 }
 

@@ -75,7 +75,7 @@ function getStoredDietPlanId(): DietPlanId | null {
 }
 
 const App: React.FC = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [categories, setCategories] = useState<MealCategory[]>(DEFAULT_CATEGORIES);
   const [activeTab, setActiveTab] = useState<'track' | 'history' | 'nutrition'>('track');
@@ -308,6 +308,14 @@ const App: React.FC = () => {
       }).format(new Date()),
     []
   );
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-stone-950 text-stone-400">
+        <div className="animate-pulse text-sm">Loading…</div>
+      </div>
+    );
+  }
 
   if (showLoginPage && !isSignedIn) {
     return (
