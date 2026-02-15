@@ -5,7 +5,7 @@ import { DIET_PLANS, DEFAULT_DIET_PLAN_ID, getDefaultCategories } from './dietPl
 import type { DietPlanId } from './dietPlans';
 import Dashboard from './components/Dashboard';
 import History from './components/History';
-import BottomNav from './components/BottomNav';
+import BottomNav, { type TabId } from './components/BottomNav';
 import AuthButton from './components/AuthButton';
 import Nutrition from './components/Nutrition';
 import LoginPage from './components/LoginPage';
@@ -79,12 +79,11 @@ const App: React.FC = () => {
   const { user, loading: authLoading } = useAuth();
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [categories, setCategories] = useState<MealCategory[]>(DEFAULT_CATEGORIES);
-  const [activeTab, setActiveTab] = useState<'track' | 'history' | 'nutrition'>('track');
+  const [activeTab, setActiveTab] = useState<TabId>('track');
   const [toast, setToast] = useState<{ msg: string; error?: boolean } | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [showLoginPage, setShowLoginPage] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [showCustomItemPage, setShowCustomItemPage] = useState(false);
   const [customItemInitialName, setCustomItemInitialName] = useState('');
   const backfillDoneRef = useRef(false);
 
@@ -358,8 +357,8 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen pb-28 antialiased">
-      <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-[var(--bg-primary)]/90 backdrop-blur-xl">
+    <div className="min-h-screen pb-24 antialiased" style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom))' }}>
+      <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-[var(--bg-primary)]/95 backdrop-blur-xl">
         <div className="max-w-xl mx-auto px-4 sm:px-5 pt-5 pb-4 flex justify-between items-start gap-4">
           <div className="min-w-0 flex-1">
             <p className="text-base text-stone-500 mb-0.5">{dateStr}</p>
@@ -395,40 +394,40 @@ const App: React.FC = () => {
       )}
 
       <main className="max-w-xl mx-auto px-4 sm:px-5 pt-5">
-        {activeTab === 'track' && showCustomItemPage && (
-          <AddCustomItemPage
-            onBack={() => { setShowCustomItemPage(false); setCustomItemInitialName(''); }}
-            onAdd={(name, emoji, action, nutrition) => {
-              handleCustomItem(name, emoji, action, nutrition);
-              setShowCustomItemPage(false);
-              setCustomItemInitialName('');
-            }}
-            categoryLabels={categories.map((c) => ({ type: c.type, label: c.label }))}
-            initialName={customItemInitialName}
-          />
-        )}
-        {activeTab === 'track' && !showCustomItemPage && (
+        {activeTab === 'track' && (
           <Dashboard
             onLog={addLog}
             logs={logs}
             categories={categories}
             onUpdateTitle={updateItemTitle}
-            onOpenAddCustomPage={(initialName) => {
+            onOpenAddTab={(initialName) => {
               setCustomItemInitialName(initialName ?? '');
-              setShowCustomItemPage(true);
+              setActiveTab('add');
             }}
           />
         )}
-        {activeTab === 'history' && (
-          <History logs={logs} onDelete={deleteLog} onImport={handleImportLogs} />
+        {activeTab === 'add' && (
+          <AddCustomItemPage
+            onBack={() => setActiveTab('track')}
+            onAdd={(name, emoji, action, nutrition) => {
+              handleCustomItem(name, emoji, action, nutrition);
+              setCustomItemInitialName('');
+              setActiveTab('track');
+            }}
+            categoryLabels={categories.map((c) => ({ type: c.type, label: c.label }))}
+            initialName={customItemInitialName}
+          />
         )}
         {activeTab === 'nutrition' && (
           <Nutrition logs={logs} categories={categories} />
         )}
+        {activeTab === 'history' && (
+          <History logs={logs} onDelete={deleteLog} onImport={handleImportLogs} />
+        )}
       </main>
 
       {toast && (
-        <div className="fixed bottom-24 left-0 right-0 flex justify-center z-50 px-4 animate-fade-up">
+        <div className="fixed left-0 right-0 flex justify-center z-50 px-4 animate-fade-up" style={{ bottom: 'calc(5.5rem + env(safe-area-inset-bottom))' }}>
           <div className={`text-white px-5 py-3.5 rounded-xl shadow-lg flex items-center gap-3 border ${toast.error ? 'bg-amber-900/90 border-amber-500/30' : 'bg-stone-800 border-white/[0.08]'}`}>
             {toast.error ? (
               <div className="h-2.5 w-2.5 bg-amber-400 rounded-full" />

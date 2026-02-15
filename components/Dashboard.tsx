@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { MealType, LogEntry, MealCategory, FoodItem } from '../types';
 import { PlusIcon, Edit3Icon, XIcon, SearchIcon, MinusIcon } from 'lucide-react';
@@ -16,10 +15,10 @@ interface DashboardProps {
   logs: LogEntry[];
   categories: MealCategory[];
   onUpdateTitle: (itemId: string, newTitle: string) => void;
-  onOpenAddCustomPage: (initialName?: string) => void;
+  onOpenAddTab: (initialName?: string) => void;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ onLog, logs, categories, onUpdateTitle, onOpenAddCustomPage }) => {
+const Dashboard: React.FC<DashboardProps> = ({ onLog, logs, categories, onUpdateTitle, onOpenAddTab }) => {
   const [selectedType, setSelectedType] = useState<MealType>(() => {
     const hour = new Date().getHours();
     if (hour < 10) return 'breakfast';
@@ -256,7 +255,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLog, logs, categories, onUpdate
                   <p className="text-sm text-stone-500">Not found?</p>
                   <button
                     type="button"
-                    onClick={() => onOpenAddCustomPage(q)}
+                    onClick={() => onOpenAddTab(q)}
                     className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-stone-800/60 border border-white/[0.08] text-stone-300 hover:bg-stone-800 transition-smooth text-base font-medium"
                   >
                     <PlusIcon size={18} strokeWidth={2.5} />
@@ -325,7 +324,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLog, logs, categories, onUpdate
       </div>
 
       <button
-        onClick={() => onOpenAddCustomPage()}
+        onClick={() => onOpenAddTab()}
         className="w-full flex items-center gap-4 p-5 rounded-2xl border border-dashed border-stone-600 hover:border-stone-500 hover:bg-stone-800/30 transition-smooth text-stone-400 hover:text-stone-300"
       >
         <div className="h-12 w-12 rounded-xl bg-stone-800 flex items-center justify-center">
