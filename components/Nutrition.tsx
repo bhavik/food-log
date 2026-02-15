@@ -4,70 +4,33 @@ import { LeafIcon, TrendingUp } from 'lucide-react';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const LAST_N_DAYS = 7;
-const PACIFIC = 'America/Los_Angeles';
 
 interface NutritionProps {
   logs: LogEntry[];
   categories: MealCategory[];
 }
 
-/** YYYY-MM-DD in Pacific. Falls back to local date if Intl/timeZone fails (never throws). */
-function toPacificDateKey(date: Date): string {
-  try {
-    const f = new Intl.DateTimeFormat('en-CA', {
-      timeZone: PACIFIC,
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    });
-    const parts = f.formatToParts(date);
-    const y = parts.find((p) => p.type === 'year')?.value;
-    const m = parts.find((p) => p.type === 'month')?.value;
-    const d = parts.find((p) => p.type === 'day')?.value;
-    if (y && m && d) return `${y}-${m}-${d}`;
-  } catch {
-    /* timeZone or formatToParts not supported */
-  }
-  const y = date.getFullYear();
-  const m = date.getMonth() + 1;
-  const day = date.getDate();
-  const ms = m < 10 ? '0' + m : String(m);
-  const ds = day < 10 ? '0' + day : String(day);
-  return `${y}-${ms}-${ds}`;
+/** YYYY-MM-DD in UTC. No Intl/timeZone — works everywhere. */
+function dateKeyUtc(ts: number): string {
+  return new Date(ts).toISOString().slice(0, 10);
 }
 
-function dateKeyPacific(ts: number): string {
-  return toPacificDateKey(new Date(ts));
+/** Today's date YYYY-MM-DD in UTC. */
+function todayUtc(): string {
+  return new Date().toISOString().slice(0, 10);
 }
 
-function todayPacific(): string {
-  return toPacificDateKey(new Date());
-}
-
-/** Format YYYY-MM-DD as "Thu, Feb 12". Pacific when possible; never throws. */
+/** Format YYYY-MM-DD as "Thu, Feb 12" (UTC date). No timeZone option — safe. */
 function formatDateLabel(dateStr: string): string {
   const d = new Date(dateStr + 'T12:00:00Z');
   if (Number.isNaN(d.getTime())) return dateStr;
-  try {
-    return d.toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-      timeZone: PACIFIC,
-    });
-  } catch {
-    return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-  }
+  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
 function formatChartDayLabel(dateStr: string): string {
   const d = new Date(dateStr + 'T12:00:00Z');
   if (Number.isNaN(d.getTime())) return dateStr;
-  try {
-    return d.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', timeZone: PACIFIC });
-  } catch {
-    return d.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' });
-  }
+  return d.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' });
 }
 
 type NutritionTotals = {
@@ -128,7 +91,7 @@ function TrendChart({
 }
 
 const Nutrition: React.FC<NutritionProps> = ({ logs, categories }) => {
-  const [selectedDate, setSelectedDate] = useState(() => todayPacific());
+  const [selectedDate, setSelectedDate] = useState(() => todayUtc());
 
   const itemLookup = useMemo(() => {
     const map = new Map<string, FoodItem>();
@@ -139,7 +102,7 @@ const Nutrition: React.FC<NutritionProps> = ({ logs, categories }) => {
   }, [categories]);
 
   const dayLogs = useMemo(
-    () => (logs || []).filter((log) => dateKeyPacific(log.timestamp) === selectedDate),
+    () => (logs || []).filter((log) => dateKeyUtc(log.timestamp) === selectedDate),
     [logs, selectedDate]
   );
 
@@ -169,8 +132,8 @@ const Nutrition: React.FC<NutritionProps> = ({ logs, categories }) => {
     const logList = logs || [];
     for (let i = LAST_N_DAYS - 1; i >= 0; i--) {
       const dayStart = now - i * DAY_MS;
-      const dk = dateKeyPacific(dayStart);
-      const dayLogsForDate = logList.filter((log) => dateKeyPacific(log.timestamp) === dk);
+      const dk = dateKeyUtc(dayStart);
+      const dayLogsForDate = logList.filter((log) => dateKeyUtc(log.timestamp) === dk);
       const acc = { ...EMPTY_TOTALS };
       dayLogsForDate.forEach((log) => {
         const item = itemLookup.get(buildItemKey({ name: log.itemName, emoji: log.emoji }));
